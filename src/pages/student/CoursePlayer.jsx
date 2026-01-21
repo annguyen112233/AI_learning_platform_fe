@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, CheckCircle2, Circle, MessageSquare, List, Send, Sparkles, ChevronLeft, MoreVertical, Lock } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export default function CoursePlayer() {
-  const { courseId } = useParams();
+  // const { courseId } = useParams();
   const [activeTab, setActiveTab] = useState('curriculum'); 
   const [inputMsg, setInputMsg] = useState('');
   const chatEndRef = useRef(null); // Để auto scroll xuống cuối chat
@@ -123,7 +123,7 @@ export default function CoursePlayer() {
             {/* TAB 1: CURRICULUM */}
             {activeTab === 'curriculum' && (
               <div className="py-2">
-                 {lessons.map((lesson, index) => {
+                 {lessons.map((lesson) => {
                    // Style logic
                    const isActive = lesson.status === 'active';
                    const isCompleted = lesson.status === 'completed';

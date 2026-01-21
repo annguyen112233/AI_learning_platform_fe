@@ -7,6 +7,7 @@ import StudentDashboard from '@/pages/student/Dashboard';
 import MyCourses from '@/pages/student/MyCourses';       // <--- NEW
 import CoursePlayer from '@/pages/student/CoursePlayer'; // <--- NEW
 import StudentProfile from '@/pages/student/Profile';
+import Register from './pages/public/Register';
 
 // Placeholders
 const InstructorDashboard = () => <div className="p-10 text-purple-600"><h1>Dashboard Giảng Viên</h1></div>;
@@ -19,7 +20,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
-
+        <Route path="/register" element={<Register />} />
         {/* Student Routes */}
         <Route path="/student" element={<StudentLayout />}>
             <Route index element={<Navigate to="/student/dashboard" replace />} />
