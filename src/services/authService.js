@@ -10,3 +10,10 @@ export const sendOtp = (email) => {
 export const register = (data) => {
   return api.post(`/accounts`, data);
 };
+
+export const login = (email, password) => {
+  return api.post('/auth/login', {
+    email,
+    password,
+  });
+};
