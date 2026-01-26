@@ -8,6 +8,8 @@ import MyCourses from '@/pages/student/MyCourses';       // <--- NEW
 import CoursePlayer from '@/pages/student/CoursePlayer'; // <--- NEW
 import StudentProfile from '@/pages/student/Profile';
 import Register from './pages/public/Register';
+import ForgotPassword from './pages/public/ForgotPassword';
+import ResetPassword from './pages/public/ResetPassword';
 
 // Placeholders
 const InstructorDashboard = () => <div className="p-10 text-purple-600"><h1>Dashboard Giảng Viên</h1></div>;
@@ -21,12 +23,14 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         {/* Student Routes */}
         <Route path="/student" element={<StudentLayout />}>
             <Route index element={<Navigate to="/student/dashboard" replace />} />
             <Route path="dashboard" element={<StudentDashboard />} />
-            <Route path="courses" element={<MyCourses />} />       {/* <--- NEW: List khóa học */}
-            <Route path="profile" element={<StudentProfile />} /> {/* <--- THÊM DÒNG NÀY */}
+            <Route path="courses" element={<MyCourses />} />      
+            <Route path="profile" element={<StudentProfile />} /> 
             {/* Các route khác trong Layout */}
         </Route>
 

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, BookOpen, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../../services/authService';
+import { login } from '@/services/authService';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,16 +19,17 @@ export default function Login() {
 
     try {
       const res = await login(email, password);
-      const data = res.data.data;
-      
-      // Lưu thông tin vào memory thay vì localStorage
+      const data = res.data?.data || res.data;
+
       sessionStorage.setItem('accessToken', data.accessToken);
       sessionStorage.setItem('refreshToken', data.refreshToken);
       sessionStorage.setItem('user', JSON.stringify(data.user));
-      
+
       navigate('/student/dashboard');
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+      const errorMessage =
+        err.response?.data?.message ||
+        'Đăng nhập thất bại. Vui lòng kiểm tra lại.';
       setError(errorMessage);
       console.error('Login error:', err);
     } finally {
@@ -37,23 +38,32 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Đăng Nhập</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Chào mừng bạn quay trở lại
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-green-50 font-sans p-6">
+
+      {/* FORM LOGIN */}
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 border-2 border-slate-100">
+
+        {/* Logo Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center p-3 bg-green-100 rounded-full mb-4 text-green-600 shadow-sm border-4 border-white">
+            <BookOpen size={32} strokeWidth={2.5} />
           </div>
+          <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+            Chào mừng trở lại!
+          </h2>
+          <p className="mt-2 text-slate-500 font-medium">
+            Sẵn sàng tiếp tục bài học hôm nay chưa?
+          </p>
+        </div>
 
-          <form onSubmit={handleLogin} className="space-y-6 mt-8">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
+        <form onSubmit={handleLogin} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg text-sm font-medium flex items-center">
+              <span className="mr-2">⚠️</span> {error}
+            </div>
+          )}
 
+          <div className="space-y-4">
             <Input
               label="Email"
               type="email"
@@ -63,6 +73,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
+              className="w-full pl-12 bg-slate-50 border-2 border-slate-200 focus:border-green-500 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-xl py-3 font-medium transition-all"
             />
 
             <Input
@@ -74,55 +85,61 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
+              className="w-full pl-12 bg-slate-50 border-2 border-slate-200 focus:border-green-500 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-xl py-3 font-medium transition-all"
             />
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Ghi nhớ đăng nhập
-                </label>
-              </div>
+          </div>
 
-              <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
-                  Quên mật khẩu?
-                </Link>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded cursor-pointer"
+              />
+              <label
+                htmlFor="remember-me"
+                className="ml-2 block text-sm font-medium text-slate-600 cursor-pointer select-none"
+              >
+                Ghi nhớ tôi
+              </label>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full py-3 text-lg shadow-lg shadow-blue-200"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Đang đăng nhập...' : 'Đăng Nhập Ngay'}
-            </Button>
-
-            <div className="text-center text-sm text-gray-600">
-              Chưa có tài khoản?{' '}
-              <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-                Đăng ký ngay
+            <div className="text-sm">
+              <Link
+                to="/forgot-password"
+                className="font-bold text-green-600 hover:text-green-700 hover:underline"
+              >
+                Quên mật khẩu?
               </Link>
             </div>
-          </form>
-        </div>
-      </div>
+          </div>
 
-      <div className="hidden lg:block lg:w-1/2 bg-gradient-to-br from-blue-500 to-blue-700 p-12">
-        <div className="h-full flex flex-col justify-center text-white">
-          <h1 className="text-4xl font-bold mb-4">
-            Chào mừng đến với Hệ thống Học tập
-          </h1>
-          <p className="text-xl text-blue-100">
-            Nơi tri thức được chia sẻ và phát triển
-          </p>
-        </div>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full !bg-green-600 hover:!bg-green-700 text-white font-bold py-3.5 rounded-xl shadow-[0_4px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[4px] transition-all flex justify-center items-center gap-2 uppercase tracking-wide text-lg"
+          >
+            {isLoading ? (
+              'Đang xử lý...'
+            ) : (
+              <span className="flex items-center gap-2">
+                Vào lớp ngay <ArrowRight size={20} />
+              </span>
+            )}
+          </Button>
+
+          <div className="text-center text-sm font-medium text-slate-500 mt-6 pt-6 border-t border-slate-100">
+            Bạn chưa có tài khoản?
+            <Link
+              to="/register"
+              className="font-bold text-green-600 hover:text-green-700 hover:underline ml-1"
+            >
+              Đăng ký miễn phí
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

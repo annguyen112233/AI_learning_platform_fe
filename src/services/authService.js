@@ -1,7 +1,7 @@
 import api from './api';
 
 export const sendOtp = (email) => {
-  return api.post("/accounts/send-otp", {
+  return api.post("/auth/send-otp", {
     email: email
   });
 };
