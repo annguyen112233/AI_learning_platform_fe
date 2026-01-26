@@ -1,5 +1,20 @@
 // Nơi cấu hình Axios instance
-export const api = {
-  get: () => console.log('Get data'),
-  post: () => console.log('Post data')
-};
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:8080/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+// Attach JWT token vào header
+api.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+
+export default api;
