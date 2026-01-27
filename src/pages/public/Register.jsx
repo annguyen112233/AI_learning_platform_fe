@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  Mail, Lock, User, Key, ArrowLeft, Loader2, 
-  BookOpen, Sparkles, GraduationCap, Presentation 
+import {
+  Mail, Lock, User, Key, ArrowLeft, Loader2,
+  BookOpen, Sparkles, GraduationCap, Presentation
 } from 'lucide-react'; // Đã thêm icon GraduationCap và Presentation
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { sendOtp, register } from '@/services/authService';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -21,9 +22,28 @@ export default function Register() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
+
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  const passwordRules = {
+    length: (v) => v.length >= 8,
+    uppercase: (v) => /[A-Z]/.test(v),
+    lowercase: (v) => /[a-z]/.test(v),
+    number: (v) => /[0-9]/.test(v),
+    special: (v) => /[^A-Za-z0-9]/.test(v),
+  };
+
+  const getStrength = (password) => {
+    let score = 0;
+    Object.values(passwordRules).forEach((rule) => {
+      if (rule(password)) score++;
+    });
+    return score; // 0 → 5
+  };
+
 
   // Hàm xử lý chọn Role riêng biệt
   const handleRoleSelect = (selectedRole) => {
@@ -52,8 +72,15 @@ export default function Register() {
     setForm(prev => ({ ...prev, otpCode: '', password: '' }));
   };
 
+  const strength = getStrength(form.password || "");
+
   const handleRegister = async (e) => {
     e.preventDefault();
+    if ((!form.otpCode || !form.password) && getStrength(form.password) < 4) {
+      toast.error("Vui lòng nhập đầy đủ thông tin!", { type: 'warning' });
+      return;
+    }
+
     try {
       setLoading(true);
       console.log("Registering with data:", form); // Kiểm tra log để thấy role
@@ -120,17 +147,16 @@ export default function Register() {
 
               {!otpSent && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
-                  
+
                   {/* --- PHẦN CHỌN ROLE --- */}
                   <div className="grid grid-cols-2 gap-4 mb-2">
                     {/* Role: STUDENT */}
-                    <div 
+                    <div
                       onClick={() => handleRoleSelect('STUDENT')}
-                      className={`cursor-pointer relative p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 ${
-                        form.role === 'STUDENT' 
-                          ? 'border-green-500 bg-green-50 text-green-700 shadow-[0_4px_0_rgb(21,128,61)] translate-y-[-2px]' 
-                          : 'border-slate-200 bg-white text-slate-400 hover:border-green-200 hover:bg-slate-50'
-                      }`}
+                      className={`cursor-pointer relative p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 ${form.role === 'STUDENT'
+                        ? 'border-green-500 bg-green-50 text-green-700 shadow-[0_4px_0_rgb(21,128,61)] translate-y-[-2px]'
+                        : 'border-slate-200 bg-white text-slate-400 hover:border-green-200 hover:bg-slate-50'
+                        }`}
                     >
                       <GraduationCap size={32} strokeWidth={form.role === 'STUDENT' ? 2.5 : 2} />
                       <span className="font-bold text-sm">Học viên</span>
@@ -140,13 +166,12 @@ export default function Register() {
                     </div>
 
                     {/* Role: INSTRUCTOR */}
-                    <div 
+                    <div
                       onClick={() => handleRoleSelect('INSTRUCTOR')}
-                      className={`cursor-pointer relative p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 ${
-                        form.role === 'INSTRUCTOR' 
-                          ? 'border-green-500 bg-green-50 text-green-700 shadow-[0_4px_0_rgb(21,128,61)] translate-y-[-2px]' 
-                          : 'border-slate-200 bg-white text-slate-400 hover:border-green-200 hover:bg-slate-50'
-                      }`}
+                      className={`cursor-pointer relative p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 ${form.role === 'INSTRUCTOR'
+                        ? 'border-green-500 bg-green-50 text-green-700 shadow-[0_4px_0_rgb(21,128,61)] translate-y-[-2px]'
+                        : 'border-slate-200 bg-white text-slate-400 hover:border-green-200 hover:bg-slate-50'
+                        }`}
                     >
                       <Presentation size={32} strokeWidth={form.role === 'INSTRUCTOR' ? 2.5 : 2} />
                       <span className="font-bold text-sm">Giảng viên</span>
@@ -198,11 +223,71 @@ export default function Register() {
                     name="password"
                     type="password"
                     icon={Lock}
-                    placeholder="••••••••"
+                    placeholder="Nhập mật khẩu"
+                    showToggle
                     value={form.password}
                     onChange={handleChange}
                     className="w-full pl-12 bg-slate-50 border-2 border-slate-200 focus:border-green-500 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-xl py-3 font-medium transition-all"
                   />
+
+                  {form.password && (
+                    <div className="mt-2 space-y-3">
+
+                      {/* Strength meter – full width dưới input */}
+                      <div>
+                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${strength >= 4
+                                ? "bg-emerald-500"
+                                : strength >= 2
+                                  ? "bg-yellow-400"
+                                  : "bg-red-400"
+                              }`}
+                            style={{ width: `${(strength / 5) * 100}%` }}
+                          />
+                        </div>
+
+                        <p
+                          className={`mt-1 text-sm font-semibold ${strength >= 4
+                              ? "text-emerald-600"
+                              : strength >= 2
+                                ? "text-yellow-500"
+                                : "text-red-500"
+                            }`}
+                        >
+                          {strength >= 4
+                            ? "Mật khẩu mạnh"
+                            : strength >= 2
+                              ? "Mật khẩu trung bình"
+                              : "Mật khẩu yếu"}
+                        </p>
+                      </div>
+
+                      {/* Checklist – 2 cột */}
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                        <span className={passwordRules.length(form.password) ? "text-emerald-600" : "text-slate-400"}>
+                          • Ít nhất 8 ký tự
+                        </span>
+
+                        <span className={passwordRules.uppercase(form.password) ? "text-emerald-600" : "text-slate-400"}>
+                          • Có chữ in hoa (A-Z)
+                        </span>
+
+                        <span className={passwordRules.lowercase(form.password) ? "text-emerald-600" : "text-slate-400"}>
+                          • Có chữ thường (a-z)
+                        </span>
+
+                        <span className={passwordRules.number(form.password) ? "text-emerald-600" : "text-slate-400"}>
+                          • Có số (0-9)
+                        </span>
+
+                        <span className={passwordRules.special(form.password) ? "text-emerald-600" : "text-slate-400"}>
+                          • Có ký tự đặc biệt (!@#$…)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
 
                   <Input
                     label="Mã OTP"

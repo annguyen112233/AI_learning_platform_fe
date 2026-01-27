@@ -83,6 +83,7 @@ export default function Login() {
               placeholder="••••••••"
               icon={Lock}
               value={password}
+              showToggle={true}
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
