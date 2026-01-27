@@ -4,6 +4,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '@/services/authService';
+import { jwtDecode } from 'jwt-decode';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,29 +14,54 @@ export default function Login() {
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-    try {
-      const res = await login(email, password);
-      const data = res.data?.data || res.data;
+  try {
+    const res = await login(email, password);
+    const data = res.data?.data || res.data;
 
-      sessionStorage.setItem('accessToken', data.accessToken);
-      sessionStorage.setItem('refreshToken', data.refreshToken);
-      sessionStorage.setItem('user', JSON.stringify(data.user));
+    const accessToken = data.accessToken;
+    const refreshToken = data.refreshToken;
 
-      navigate('/student/dashboard');
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        'Đăng nhập thất bại. Vui lòng kiểm tra lại.';
-      setError(errorMessage);
-      console.error('Login error:', err);
-    } finally {
-      setIsLoading(false);
+    // ✅ Lưu token vào sessionStorage
+    sessionStorage.setItem('accessToken', accessToken);
+    sessionStorage.setItem('refreshToken', refreshToken);
+
+    // ✅ Decode JWT để lấy role
+    const decoded = jwtDecode(accessToken);
+    const role = decoded.role;
+    console.log(role)
+    // ✅ Redirect theo role
+    switch (role) {
+      case 'STUDENT':
+        navigate('/student/dashboard');
+        break;
+
+      case 'INSTRUCTOR':
+        navigate('/instructor/dashboard');
+        break;
+
+      case 'ADMIN':
+        navigate('/admin/dashboard');
+        break;
+
+      default:
+        setError('Role không hợp lệ');
+        sessionStorage.clear();
     }
-  };
+
+  } catch (err) {
+    const errorMessage =
+      err.response?.data?.message ||
+      'Đăng nhập thất bại. Vui lòng kiểm tra lại.';
+    setError(errorMessage);
+    console.error('Login error:', err);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-50 font-sans p-6">
