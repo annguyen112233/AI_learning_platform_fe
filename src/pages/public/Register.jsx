@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Key, ArrowLeft, Loader2, BookOpen, Sparkles } from 'lucide-react';
+import { 
+  Mail, Lock, User, Key, ArrowLeft, Loader2, 
+  BookOpen, Sparkles, GraduationCap, Presentation 
+} from 'lucide-react'; // Đã thêm icon GraduationCap và Presentation
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { sendOtp, register } from '@/services/authService';
 import { useNavigate } from 'react-router-dom';
-
 
 export default function Register() {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ export default function Register() {
     email: '',
     password: '',
     otpCode: '',
+    role: 'STUDENT', // Mặc định là học viên
   });
 
   const [otpSent, setOtpSent] = useState(false);
@@ -20,6 +23,11 @@ export default function Register() {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // Hàm xử lý chọn Role riêng biệt
+  const handleRoleSelect = (selectedRole) => {
+    setForm(prev => ({ ...prev, role: selectedRole }));
   };
 
   const handleSendOtp = async () => {
@@ -48,10 +56,10 @@ export default function Register() {
     e.preventDefault();
     try {
       setLoading(true);
+      console.log("Registering with data:", form); // Kiểm tra log để thấy role
       await register(form);
 
       alert('Đăng ký thành công! Vui lòng đăng nhập để bắt đầu học.');
-
       navigate('/login');
     } catch (err) {
       alert(err.response?.data?.message || 'Đăng ký thất bại');
@@ -59,7 +67,6 @@ export default function Register() {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-50 p-4 font-sans">
@@ -80,7 +87,7 @@ export default function Register() {
 
         <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] overflow-hidden border-2 border-slate-100">
 
-          {/* Thanh tiến trình màu xanh */}
+          {/* Thanh tiến trình */}
           <div className="h-2 w-full bg-slate-100 flex">
             <div
               className={`h-full bg-green-500 transition-all duration-500 ease-out ${otpSent ? 'w-full' : 'w-1/2'}`}
@@ -95,7 +102,7 @@ export default function Register() {
                     <Sparkles className="text-yellow-400 fill-yellow-400" size={20} /> Thiết lập bảo mật
                   </>
                 ) : (
-                  "Tạo hồ sơ học viên"
+                  "Tạo hồ sơ mới"
                 )}
               </h2>
               {otpSent && (
@@ -113,6 +120,40 @@ export default function Register() {
 
               {!otpSent && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
+                  
+                  {/* --- PHẦN CHỌN ROLE --- */}
+                  <div className="grid grid-cols-2 gap-4 mb-2">
+                    {/* Role: STUDENT */}
+                    <div 
+                      onClick={() => handleRoleSelect('STUDENT')}
+                      className={`cursor-pointer relative p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 ${
+                        form.role === 'STUDENT' 
+                          ? 'border-green-500 bg-green-50 text-green-700 shadow-[0_4px_0_rgb(21,128,61)] translate-y-[-2px]' 
+                          : 'border-slate-200 bg-white text-slate-400 hover:border-green-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <GraduationCap size={32} strokeWidth={form.role === 'STUDENT' ? 2.5 : 2} />
+                      <span className="font-bold text-sm">Học viên</span>
+                      {form.role === 'STUDENT' && (
+                        <div className="absolute top-2 right-2 w-3 h-3 bg-green-500 rounded-full animate-ping" />
+                      )}
+                    </div>
+
+                    {/* Role: INSTRUCTOR */}
+                    <div 
+                      onClick={() => handleRoleSelect('INSTRUCTOR')}
+                      className={`cursor-pointer relative p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 ${
+                        form.role === 'INSTRUCTOR' 
+                          ? 'border-green-500 bg-green-50 text-green-700 shadow-[0_4px_0_rgb(21,128,61)] translate-y-[-2px]' 
+                          : 'border-slate-200 bg-white text-slate-400 hover:border-green-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Presentation size={32} strokeWidth={form.role === 'INSTRUCTOR' ? 2.5 : 2} />
+                      <span className="font-bold text-sm">Giảng viên</span>
+                    </div>
+                  </div>
+                  {/* --- KẾT THÚC PHẦN CHỌN ROLE --- */}
+
                   <Input
                     label="Họ và tên"
                     name="fullName"
@@ -128,7 +169,7 @@ export default function Register() {
                     name="email"
                     type="email"
                     icon={Mail}
-                    placeholder="hocvien@example.com"
+                    placeholder="user@example.com"
                     value={form.email}
                     onChange={handleChange}
                     className="w-full pl-12 bg-slate-50 border-2 border-slate-200 focus:border-green-500 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-xl py-3 font-medium transition-all"
@@ -138,7 +179,6 @@ export default function Register() {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={loading}
-                    // THAY ĐỔI: Thêm !bg-green-600 để ép màu xanh lá
                     className="w-full !bg-green-600 hover:!bg-green-700 text-white font-bold py-3.5 rounded-xl shadow-[0_4px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[4px] transition-all flex justify-center items-center gap-2 uppercase tracking-wide mt-2"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "Tiếp tục"}
@@ -150,7 +190,7 @@ export default function Register() {
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
                   <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-xl text-sm font-medium border border-blue-100 flex items-start gap-2">
                     <Mail size={16} className="mt-0.5 shrink-0" />
-                    <span>Mã xác thực đã được gửi tới <strong>{form.email}</strong></span>
+                    <span>Mã xác thực đã được gửi tới <strong>{form.email}</strong> cho tài khoản <strong>{form.role === 'STUDENT' ? 'Học viên' : 'Giảng viên'}</strong></span>
                   </div>
 
                   <Input
@@ -163,7 +203,6 @@ export default function Register() {
                     onChange={handleChange}
                     className="w-full pl-12 bg-slate-50 border-2 border-slate-200 focus:border-green-500 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-xl py-3 font-medium transition-all"
                   />
-
 
                   <Input
                     label="Mã OTP"
@@ -178,7 +217,6 @@ export default function Register() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    // THAY ĐỔI: Thêm !bg-green-600 để ép màu xanh lá
                     className="w-full !bg-green-600 hover:!bg-green-700 text-white font-bold py-3.5 rounded-xl shadow-[0_4px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[4px] transition-all flex justify-center items-center gap-2 uppercase tracking-wide mt-2"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "Hoàn tất đăng ký"}

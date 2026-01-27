@@ -45,8 +45,8 @@ export default function Login() {
 
         {/* Logo Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-green-100 rounded-full mb-4 text-green-600 shadow-sm border-4 border-white">
-            <BookOpen size={32} strokeWidth={2.5} />
+          <div className="inline-flex items-center justify-center p-6 bg-green-100 rounded-full mb-4 text-green-600 shadow-md border-4 border-white text-5xl">
+            🐳
           </div>
           <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
             Chào mừng trở lại!
@@ -55,6 +55,7 @@ export default function Login() {
             Sẵn sàng tiếp tục bài học hôm nay chưa?
           </p>
         </div>
+
 
         <form onSubmit={handleLogin} className="space-y-6">
           {error && (
@@ -125,7 +126,7 @@ export default function Login() {
               'Đang xử lý...'
             ) : (
               <span className="flex items-center gap-2">
-                Vào lớp ngay <ArrowRight size={20} />
+                Đăng nhập ngay <ArrowRight size={20} />
               </span>
             )}
           </Button>

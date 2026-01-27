@@ -28,7 +28,7 @@ export default function StudentLayout() {
     sessionStorage.removeItem("user");  // optional
     sessionStorage.removeItem("refreshToken");
 
-  
+
 
     navigate("/login");
   };
@@ -41,13 +41,14 @@ export default function StudentLayout() {
 
         {/* Logo */}
         <div className="h-20 flex items-center gap-3 px-8 border-b border-slate-50">
-          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600 shadow-sm">
-            <BookOpen size={22} strokeWidth={3} />
+          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600 shadow-sm text-2xl">
+            🐳
           </div>
           <span className="text-xl font-extrabold text-green-700 tracking-tight">
-            English Master
+            SABO Master
           </span>
         </div>
+
 
         {/* Navigation */}
         <nav className="flex-1 p-6 space-y-2">
@@ -56,10 +57,9 @@ export default function StudentLayout() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${
-                  isActive
-                    ? "bg-green-50 text-green-700 font-bold shadow-sm translate-x-1"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium hover:translate-x-1"
+                `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${isActive
+                  ? "bg-green-50 text-green-700 font-bold shadow-sm translate-x-1"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium hover:translate-x-1"
                 }`
               }
             >
