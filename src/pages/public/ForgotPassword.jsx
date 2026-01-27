@@ -3,7 +3,7 @@ import { Mail, KeyRound, ArrowLeft, CheckCircle2, ArrowRight } from 'lucide-reac
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Link } from 'react-router-dom';
-// import { requestPasswordReset } from '@/services/authService'; // Import API của bạn
+import { forgotPassword } from '@/services/authService'; // Import API của bạn
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -18,7 +18,7 @@ export default function ForgotPassword() {
 
     try {
       // Gọi API gửi mail reset password tại đây
-      // await requestPasswordReset(email);
+      await forgotPassword(email);
       
       // Giả lập delay mạng để hiển thị loading
       await new Promise(resolve => setTimeout(resolve, 1500));

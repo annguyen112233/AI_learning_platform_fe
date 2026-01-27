@@ -17,3 +17,16 @@ export const login = (email, password) => {
     password,
   });
 };
+
+export const forgotPassword = (email) => {
+  return api.post('/accounts/forgot-password', null, {
+    params: { email },
+  });
+};
+
+export const resetPassword = (token, newPassword) => {
+  return api.post('/accounts/reset-password', {
+    token,
+    newPassword,
+  });
+}
