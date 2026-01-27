@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { Lock, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
