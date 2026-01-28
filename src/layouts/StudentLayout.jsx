@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from "@/context/AuthContext";
 import { logout } from "@/services/authService"
+
 import {
   LayoutDashboard,
   BookOpen,
@@ -156,9 +157,9 @@ export default function StudentLayout() {
               <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-100">
 
                 {/* Avatar */}
-                {user?.avatarUrl ? (
+                {user?.imageUrl ? (
                   <img
-                    src={user.avatarUrl}
+                    src={user.imageUrl}
                     alt="Avatar"
                     className="w-10 h-10 rounded-full object-cover border-2 border-green-200 shadow-sm"
                   />

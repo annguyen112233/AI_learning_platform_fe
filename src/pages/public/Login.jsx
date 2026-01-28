@@ -5,6 +5,10 @@ import Input from '@/components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '@/services/authService';
 import { jwtDecode } from 'jwt-decode';
+import { useAuth } from "@/context/AuthContext";
+import { getProfile } from '@/services/userService';
+
+
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,56 +16,61 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const { setUser } = useAuth();
+
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  try {
-    const res = await login(email, password);
-    const data = res.data?.data || res.data;
+    try {
+      const res = await login(email, password);
+      const data = res.data?.data || res.data;
 
-    const accessToken = data.accessToken;
-    const refreshToken = data.refreshToken;
+      const accessToken = data.accessToken;
 
-    // ✅ Lưu token vào sessionStorage
-    sessionStorage.setItem('accessToken', accessToken);
-    sessionStorage.setItem('refreshToken', refreshToken);
+      // ✅ CHỈ lưu access token
+      sessionStorage.setItem('accessToken', accessToken);
+      const profileRes = await getProfile();
+      console.log('Profile:', profileRes);
+      setUser(profileRes.data.data);
 
-    // ✅ Decode JWT để lấy role
-    const decoded = jwtDecode(accessToken);
-    const role = decoded.role;
-    console.log(role)
-    // ✅ Redirect theo role
-    switch (role) {
-      case 'STUDENT':
-        navigate('/student/dashboard');
-        break;
+      // ✅ Decode JWT để lấy role
+      const decoded = jwtDecode(accessToken);
+      const role = decoded.role;
 
-      case 'INSTRUCTOR':
-        navigate('/instructor/dashboard');
-        break;
+      console.log('ROLE:', role);
 
-      case 'ADMIN':
-        navigate('/admin/dashboard');
-        break;
+      // ✅ Redirect theo role
+      switch (role) {
+        case 'STUDENT':
+          navigate('/student/dashboard');
+          break;
 
-      default:
-        setError('Role không hợp lệ');
-        sessionStorage.clear();
+        case 'INSTRUCTOR':
+          navigate('/instructor/dashboard');
+          break;
+
+        case 'ADMIN':
+          navigate('/admin/dashboard');
+          break;
+
+        default:
+          setError('Role không hợp lệ');
+          sessionStorage.clear();
+      }
+
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        'Đăng nhập thất bại. Vui lòng kiểm tra lại.';
+      setError(errorMessage);
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
     }
-
-  } catch (err) {
-    const errorMessage =
-      err.response?.data?.message ||
-      'Đăng nhập thất bại. Vui lòng kiểm tra lại.';
-    setError(errorMessage);
-    console.error('Login error:', err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-50 font-sans p-6">

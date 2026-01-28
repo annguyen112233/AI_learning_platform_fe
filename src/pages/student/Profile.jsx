@@ -85,7 +85,6 @@ export default function StudentProfile() {
       }));
 
       // 🔥 sync global state
-      setUser(mappedUser);
       sessionStorage.setItem("user", JSON.stringify(mappedUser));
     } catch (error) {
       console.error("Lỗi khi lấy dữ liệu hồ sơ:", error);
@@ -121,15 +120,11 @@ export default function StudentProfile() {
       // Kiểm tra nếu newAvatarUrl là string (link ảnh) thì mới chạy
       if (newAvatarUrl && typeof newAvatarUrl === 'string') {
         console.log("Link ảnh mới:", newAvatarUrl);
-
-        // --- ĐÃ BỎ BƯỚC GỌI API updateProfile TẠI ĐÂY ---
-
-        // BƯỚC C: Cập nhật State để UI hiển thị ảnh mới
         setFormData(prev => ({ ...prev, avatarUrl: newAvatarUrl }));
 
         const updatedUser = {
           ...JSON.parse(sessionStorage.getItem("user") || "{}"),
-          avatarUrl: newAvatarUrl,
+          imageUrl: newAvatarUrl,
         };
 
         setUser(updatedUser);
@@ -181,7 +176,6 @@ export default function StudentProfile() {
         ...payload,
       };
 
-      setUser(updatedUser);
       sessionStorage.setItem("user", JSON.stringify(updatedUser));
 
     } catch (error) {

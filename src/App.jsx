@@ -21,8 +21,11 @@ import StudentProfile from "@/pages/student/Profile";
 // Instructor Pages
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 
-// Admin Pages
+// Admin Pages & Layout
+// ✅ FIX 1: Import đúng file AdminLayout (đã tạo ở bước trước)
+import AdminLayout from "@/layouts/AdminLayout"; 
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserManagement from "./pages/admin/UserManagement";
 
 // Fallback
 const NotFound = () => (
@@ -43,22 +46,16 @@ function App() {
             duration: 3000,
             style: {
               borderRadius: "14px",
-              background: "#0f172a", // slate-900
+              background: "#0f172a",
               color: "#fff",
               fontWeight: "600",
               padding: "12px 16px",
             },
             success: {
-              iconTheme: {
-                primary: "#22c55e", // emerald-500
-                secondary: "#ecfdf5",
-              },
+              iconTheme: { primary: "#22c55e", secondary: "#ecfdf5" },
             },
             error: {
-              iconTheme: {
-                primary: "#ef4444", // red-500
-                secondary: "#fef2f2",
-              },
+              iconTheme: { primary: "#ef4444", secondary: "#fef2f2" },
             },
           }}
         />
@@ -71,7 +68,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* ================= STUDENT ROUTES (PROTECTED) ================= */}
+          {/* ================= STUDENT ROUTES ================= */}
           <Route
             path="/student"
             element={
@@ -80,13 +77,13 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/student/dashboard" replace />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<StudentDashboard />} />
             <Route path="courses" element={<MyCourses />} />
             <Route path="profile" element={<StudentProfile />} />
           </Route>
 
-          {/* Learning Space (Full screen, separate from layout) */}
+          {/* Learning Space (Full screen) */}
           <Route
             path="/student/learning/:courseId"
             element={
@@ -96,7 +93,7 @@ function App() {
             }
           />
 
-          {/* ================= INSTRUCTOR ROUTES (PROTECTED) ================= */}
+          {/* ================= INSTRUCTOR ROUTES ================= */}
           <Route
             path="/instructor/dashboard"
             element={
@@ -106,15 +103,26 @@ function App() {
             }
           />
 
-          {/* ================= ADMIN ROUTES (PROTECTED) ================= */}
+          {/* ================= ADMIN ROUTES (ĐÃ SỬA) ================= */}
+          {/* ✅ FIX 2: Dùng Nested Route để AdminLayout bao bọc các trang con */}
           <Route
-            path="/admin/dashboard"
+            path="/admin"
             element={
               <ProtectedRoute allowRoles={["ADMIN"]}>
-                <AdminDashboard />
+                <AdminLayout /> {/* Layout nằm ở đây, chứa <Outlet /> */}
               </ProtectedRoute>
             }
-          />
+          >
+            {/* Nếu vào /admin thì tự nhảy sang dashboard */}
+            <Route index element={<Navigate to="dashboard" replace />} />
+            
+            {/* Các trang con sẽ hiện vào vị trí <Outlet /> trong AdminLayout */}
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<UserManagement />} />
+            
+            {/* Sau này thêm route courses ở đây */}
+            {/* <Route path="courses" element={<CourseManagement />} /> */}
+          </Route>
 
           {/* ================= CATCH ALL ================= */}
           <Route path="*" element={<NotFound />} />
