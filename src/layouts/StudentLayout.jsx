@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from "@/context/AuthContext";
+import { logout } from "@/services/authService"
 import {
   LayoutDashboard,
   BookOpen,
@@ -25,11 +26,18 @@ export default function StudentLayout() {
     { icon: User, label: "Hồ sơ", path: "/student/profile" },
   ];
 
-  const handleLogout = () => {
-    sessionStorage.clear();
-    setUser(null);      // 👈 reset global state
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout(); // 🔥 gọi BE để blacklist token
+    } catch (err) {
+      console.warn("Logout failed (token may already be expired)", err);
+    } finally {
+      sessionStorage.clear();
+      setUser(null);
+      navigate("/login");
+    }
   };
+
 
   const handleGoProfile = () => {
     navigate("/student/profile");
