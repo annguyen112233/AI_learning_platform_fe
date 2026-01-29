@@ -19,8 +19,8 @@ export const formatDateVN = (isoString) => {
 export const getUserRole = () => {
   const token = sessionStorage.getItem("accessToken");
 
-if (token) {
-  const decoded = jwtDecode(token);
-  console.log(decoded);
-}
+  if (token) {
+    const decoded = jwtDecode(token);
+    console.log(decoded);
+  }
 };

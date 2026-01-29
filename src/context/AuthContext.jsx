@@ -1,21 +1,38 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // 🔥 Restore user khi F5
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        setUser(null);
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  const login = (userData) => {
+    setUser(userData);
+    sessionStorage.setItem("user", JSON.stringify(userData));
+  };
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("refreshToken");
-    sessionStorage.removeItem("user");
+    sessionStorage.clear();
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, setUser: login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

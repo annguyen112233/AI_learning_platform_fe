@@ -145,6 +145,7 @@ export default function StudentProfile() {
         ...JSON.parse(sessionStorage.getItem("user") || "{}"),
         ...payload,
       };
+      setUser(updatedUser);
       sessionStorage.setItem("user", JSON.stringify(updatedUser));
     } catch (error) {
       toast.error(error?.response?.data?.message || "Cập nhật thất bại!");
