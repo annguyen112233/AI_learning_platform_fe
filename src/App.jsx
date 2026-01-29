@@ -42,6 +42,8 @@ import StaffDiscussions from "@/pages/staff/StaffDiscussions";
 // ✅ FIX 1: Import đúng file AdminLayout (đã tạo ở bước trước)
 import AdminLayout from "@/layouts/AdminLayout";
 import UserManagement from "./pages/admin/UserManagement";
+import InstructorLayout from "./layouts/InstructorLayout";
+import InstructorProfile from "./pages/instructor/Profile";
 
 // Fallback
 const NotFound = () => (
@@ -113,13 +115,16 @@ function App() {
 
           {/* ================= INSTRUCTOR ROUTES ================= */}
           <Route
-            path="/instructor/dashboard"
+            path="/instructor"
             element={
               <ProtectedRoute allowRoles={["INSTRUCTOR"]}>
-                <InstructorDashboard />
+                <InstructorLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path="dashboard" element={<InstructorDashboard />} />
+            <Route path="profile" element={<InstructorProfile />} />
+          </Route>
           <Route
             path="/instructor/module/:moduleId"
             element={

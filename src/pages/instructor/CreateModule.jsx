@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus, Hash, Type, AlertCircle } from "lucide-react";
 import api from "../../services/api";
 
 export default function CreateModule({ courseId, onCreated }) {
@@ -31,7 +32,7 @@ export default function CreateModule({ courseId, onCreated }) {
       await api.post("/modules", {
         title: form.title,
         orderIndex: form.orderIndex,
-        courseId, // ✅ gửi courseId rõ ràng
+        courseId,
       });
 
       setForm({ title: "", orderIndex: 1 });
@@ -45,36 +46,65 @@ export default function CreateModule({ courseId, onCreated }) {
   };
 
   return (
-    <div className="mt-3 space-y-2">
-      <input
-        name="title"
-        className="border p-2 w-full rounded"
-        placeholder="Tên module"
-        value={form.title}
-        onChange={handleChange}
-      />
+    <div className="space-y-4">
+      {/* Title Input */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Type size={16} className="text-emerald-600" />
+          Tên module
+        </label>
+        <input
+          name="title"
+          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all placeholder:text-slate-400"
+          placeholder="VD: Module 1 - Giới thiệu cơ bản"
+          value={form.title}
+          onChange={handleChange}
+        />
+      </div>
 
-      <input
-        name="orderIndex"
-        type="number"
-        min={1}
-        className="border p-2 w-full rounded"
-        placeholder="Thứ tự module"
-        value={form.orderIndex}
-        onChange={handleChange}
-      />
+      {/* Order Index Input */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Hash size={16} className="text-emerald-600" />
+          Thứ tự module
+        </label>
+        <input
+          name="orderIndex"
+          type="number"
+          min={1}
+          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+          placeholder="1"
+          value={form.orderIndex}
+          onChange={handleChange}
+        />
+      </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+          <AlertCircle size={18} className="text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {/* Submit Button */}
       <button
         onClick={handleSubmit}
         disabled={loading}
-        className="bg-green-600 text-white px-4 py-2 rounded w-full"
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:from-slate-400 disabled:to-slate-500 text-white px-6 py-3.5 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02] disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
       >
-        {loading ? "Đang lưu..." : "Thêm module"}
+        {loading ? (
+          <>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Đang lưu...</span>
+          </>
+        ) : (
+          <>
+            <Plus size={20} />
+            <span>Thêm module</span>
+          </>
+        )}
       </button>
-
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
-      )}
     </div>
   );
 }

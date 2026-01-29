@@ -7,10 +7,13 @@ export const createLessonByUpload = ({
   documentFile,
 }) => {
   const formData = new FormData();
-  formData.append("videoFile", videoFile);
+  
+  // ✅ Append với tên file gốc
+  formData.append("videoFile", videoFile, videoFile.name);
 
   if (documentFile) {
-    formData.append("documentFile", documentFile);
+    // ✅ Append với tên file gốc
+    formData.append("documentFile", documentFile, documentFile.name);
   }
 
   return api.post(
@@ -27,6 +30,7 @@ export const createLessonByUpload = ({
     }
   );
 };
+
 export const getLessonsByModule = (moduleId) => {
   return api.get(`/lessons/module/${moduleId}`);
 };
