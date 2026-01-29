@@ -18,3 +18,7 @@ export const getProfile = () => {
 export const updateProfile = (data) => {
   return api.put('/users/update-profile', data);
 }
+
+export const changePassword = (data) => {
+  return api.post('/users/change-password', data);
+}

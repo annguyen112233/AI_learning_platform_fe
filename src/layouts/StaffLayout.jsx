@@ -1,28 +1,29 @@
 import React from 'react';
-import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from "@/context/AuthContext";
 import { logout } from "@/services/authService";
 
 import {
   LayoutDashboard,
-  BookOpen,      // Dùng cho Quản lý khóa học
-  Users,         // Dùng cho Quản lý người dùng
+  ClipboardCheck, 
+  Flag,           
+  MessageSquare,  
   LogOut,
   Bell,
   Settings,
-  ShieldCheck    // Icon đại diện cho Admin
+  Shield            
 } from 'lucide-react';
 
-export default function AdminLayout() {
+export default function StaffLayout() {
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
 
-  // 👇 DANH SÁCH MENU DÀNH RIÊNG CHO ADMIN
+  // 👇 MENU DÀNH RIÊNG CHO STAFF (OPERATIONS)
   const sidebarItems = [
-    { icon: LayoutDashboard, label: "Tổng quan", path: "/admin/dashboard" },
-    { icon: BookOpen, label: "Quản lý khóa học", path: "/admin/courses" }, // Quan trọng
-    { icon: Users, label: "Người dùng", path: "/admin/users" },
-    // Có thể thêm "Báo cáo" hoặc "Cấu hình" sau này
+    { icon: LayoutDashboard, label: "Dashboard", path: "/staff/dashboard" },
+    { icon: ClipboardCheck, label: "Kiểm duyệt nội dung", path: "/staff/moderation" }, 
+    { icon: Flag, label: "Xử lý báo cáo", path: "/staff/reports" }, 
+    { icon: MessageSquare, label: "Q&A & Bình luận", path: "/staff/discussions" }, 
   ];
 
   const handleLogout = async () => {
@@ -40,21 +41,20 @@ export default function AdminLayout() {
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800">
 
-      {/* SIDEBAR (Giữ nguyên style Student) */}
+      {/* SIDEBAR */}
       <aside className="w-72 bg-white border-r border-slate-100 flex flex-col fixed h-full z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
 
-        {/* Logo */}
+        {/* Logo - Đã đổi về Green chuẩn */}
         <div className="h-20 flex items-center gap-3 px-8 border-b border-slate-50">
           <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600 shadow-sm text-2xl">
-            {/* Đổi icon thành Shield để phân biệt Admin nhưng vẫn giữ màu xanh */}
-            <ShieldCheck size={24} strokeWidth={2.5} />
+            🐳
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-extrabold text-green-700 tracking-tight leading-none">
-              SABO Admin
+            <span className="text-xl font-extrabold text-green-700 tracking-tight">
+              SABO Staff
             </span>
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-              Management Portal
+              Content Operation
             </span>
           </div>
         </div>
@@ -67,8 +67,8 @@ export default function AdminLayout() {
               to={item.path}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${isActive
-                  ? "bg-green-50 text-green-700 font-bold shadow-sm translate-x-1" // Active style y hệt Student
-                  : "text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium hover:translate-x-1"
+                  ? "bg-green-50 text-green-700 font-bold shadow-sm translate-x-1" // ✅ Active: Green
+                  : "text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium hover:translate-x-1" // ✅ Hover: Green
                 }`
               }
             >
@@ -79,8 +79,8 @@ export default function AdminLayout() {
                     strokeWidth={isActive ? 2.5 : 2}
                     className={
                       isActive
-                        ? "text-green-600"
-                        : "text-slate-400 group-hover:text-green-500"
+                        ? "text-green-600" // ✅ Icon Active: Green
+                        : "text-slate-400 group-hover:text-green-500" // ✅ Icon Hover: Green
                     }
                   />
                   {item.label}
@@ -93,43 +93,23 @@ export default function AdminLayout() {
         {/* Bottom Actions */}
         <div className="p-6 border-t border-slate-50 space-y-2">
           {/* Cài đặt */}
-          <button
-            className="
-              flex items-center gap-3 px-4 py-3
-              bg-green-100 text-green-800
-              hover:bg-green-200 hover:shadow-sm
-              w-full rounded-xl transition-all font-semibold
-              group
-            "
-          >
-            <Settings
-              size={22}
-              className="text-green-700 group-hover:rotate-90 transition-transform duration-300"
-            />
-            <span>Cấu hình</span>
+          <button className="flex items-center gap-3 px-4 py-3 bg-slate-100 text-slate-600 hover:bg-slate-200 w-full rounded-xl transition-all font-semibold group">
+            <Settings size={22} className="group-hover:rotate-90 transition-transform duration-300"/>
+            <span>Cài đặt</span>
           </button>
 
-          {/* Đăng xuất */}
+          {/* Đăng xuất - Nút Xanh lá */}
           <button
             onClick={handleLogout}
-            className="
-              flex items-center gap-3 px-4 py-3
-              bg-green-600 text-white
-              hover:bg-green-700 hover:shadow-md
-              w-full rounded-xl transition-all font-bold
-              group
-            "
+            className="flex items-center gap-3 px-4 py-3 bg-green-600 text-white hover:bg-green-700 hover:shadow-md w-full rounded-xl transition-all font-bold group"
           >
-            <LogOut
-              size={22}
-              className="group-hover:-translate-x-1 transition-transform"
-            />
+            <LogOut size={22} className="group-hover:-translate-x-1 transition-transform"/>
             <span>Đăng xuất</span>
           </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 ml-72 flex flex-col h-screen overflow-hidden relative">
 
         {/* TOP BAR */}
@@ -144,40 +124,28 @@ export default function AdminLayout() {
 
             <div className="h-8 w-[1px] bg-slate-200"></div>
 
-            {/* Admin Profile */}
-            <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-100">
-
-              {/* Avatar */}
-              {user?.imageUrl ? (
-                <img
-                  src={user.imageUrl}
-                  alt="Avatar"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-green-200 shadow-sm"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-200 flex items-center justify-center text-green-700 font-bold text-lg shadow-sm">
-                  {/* Avatar mặc định của Admin màu tối hơn chút để trông quyền lực */}
-                  A
-                </div>
-              )}
+            {/* Staff Profile */}
+            <div className="flex items-center gap-3">
+              {/* Avatar - Viền Xanh lá */}
+              <div className="w-10 h-10 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center text-green-700 font-bold text-lg shadow-sm">
+                S
+              </div>
 
               {/* Name + Role Badge */}
               <div className="hidden md:block">
                 <p className="text-sm font-bold text-slate-700 leading-tight">
-                  {user?.fullName || "Administrator"}
+                  {user?.fullName || "Staff Member"}
                 </p>
-
-                {/* Badge Role: ADMIN */}
-                <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
-                  ADMIN
+                {/* Badge Role: MODERATOR - Màu Xanh lá */}
+                <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded w-fit mt-0.5 border border-green-100">
+                  MODERATOR
                 </p>
               </div>
-
             </div>
           </div>
         </header>
 
-        {/* CONTENT (Outlet) */}
+        {/* CONTENT */}
         <main className="flex-1 overflow-y-auto bg-slate-50 p-8 scroll-smooth">
           <div className="max-w-6xl mx-auto pb-10">
             <Outlet />

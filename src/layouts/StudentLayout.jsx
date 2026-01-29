@@ -1,5 +1,8 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from "@/context/AuthContext";
+import { logout } from "@/services/authService"
+
 import {
   LayoutDashboard,
   BookOpen,
@@ -14,6 +17,7 @@ import {
 export default function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, setUser } = useAuth(); // 👈 THÊM DÒNG NÀY
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Tổng quan", path: "/student/dashboard" },
@@ -23,14 +27,21 @@ export default function StudentLayout() {
     { icon: User, label: "Hồ sơ", path: "/student/profile" },
   ];
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("accessToken"); // đổi key nếu bạn dùng tên khác
-    sessionStorage.removeItem("user");  // optional
-    sessionStorage.removeItem("refreshToken");
+  const handleLogout = async () => {
+    try {
+      await logout(); // 🔥 gọi BE để blacklist token
+    } catch (err) {
+      console.warn("Logout failed (token may already be expired)", err);
+    } finally {
+      sessionStorage.clear();
+      setUser(null);
+      navigate("/login");
+    }
+  };
 
 
-
-    navigate("/login");
+  const handleGoProfile = () => {
+    navigate("/student/profile");
   };
 
   return (
@@ -45,7 +56,7 @@ export default function StudentLayout() {
             🐳
           </div>
           <span className="text-xl font-extrabold text-green-700 tracking-tight">
-            SABO Master
+            SABO Academy
           </span>
         </div>
 
@@ -138,18 +149,39 @@ export default function StudentLayout() {
             <div className="h-8 w-[1px] bg-slate-200"></div>
 
             {/* User Profile */}
-            <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-100">
-              <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-200 flex items-center justify-center text-green-700 font-bold text-lg shadow-sm">
-                M
+            <div
+              onClick={handleGoProfile}
+              className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-100"
+            >
+              {/* User Profile */}
+              <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-100">
+
+                {/* Avatar */}
+                {user?.imageUrl ? (
+                  <img
+                    src={user.imageUrl}
+                    alt="Avatar"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-green-200 shadow-sm"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-200 flex items-center justify-center text-green-700 font-bold text-lg shadow-sm">
+                    {(user?.fullName || "U")[0].toUpperCase()}
+                  </div>
+                )}
+
+                {/* Name + Level */}
+                <div className="hidden md:block">
+                  <p className="text-sm font-bold text-slate-700 leading-tight">
+                    {user?.fullName || "Học viên"}
+                  </p>
+
+                  <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
+                    {user?.level || "N5"}
+                  </p>
+                </div>
+
               </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-bold text-slate-700 leading-tight">
-                  Minh Student
-                </p>
-                <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
-                  Level A1
-                </p>
-              </div>
+
             </div>
 
           </div>
