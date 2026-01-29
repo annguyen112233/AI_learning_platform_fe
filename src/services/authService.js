@@ -26,9 +26,6 @@ export const logout = async () => {
   await api.post('/auth/logout', {}, { withCredentials: true });
 };
 
-
-
-
 export const forgotPassword = (email) => {
   return api.post('/accounts/forgot-password', null, {
     params: { email },

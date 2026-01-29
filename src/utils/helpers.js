@@ -23,6 +23,11 @@ export const getDecodedToken = () => {
   const token = sessionStorage.getItem("accessToken");
   if (!token) return null;
 
+  if (token) {
+    const decoded = jwtDecode(token);
+    console.log(decoded);
+  }
+
   try {
     return jwtDecode(token);
   } catch (e) {

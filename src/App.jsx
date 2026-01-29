@@ -30,6 +30,7 @@ import ModuleManager from "./pages/instructor/ModuleManager";
 // Student Pages & Layout
 import ChatMessage from "@/pages/student/ChatMessage";
 import Achievements from "@/pages/student/Achievements";
+import CourseDetail from '@/pages/student/CourseDetail';
 
 // Staff Pages & Layout
 import StaffLayout from "@/layouts/StaffLayout";
@@ -101,6 +102,12 @@ function App() {
             <Route path="profile" element={<StudentProfile />} />
             <Route path="chat" element={<ChatMessage />} />
             <Route path="achievements" element={<Achievements />} />
+ 
+            <Route path="course/:id" element={<CourseDetail />} />
+
+
+
+ 
           </Route>
 
           {/* Learning Space (Full screen) */}
