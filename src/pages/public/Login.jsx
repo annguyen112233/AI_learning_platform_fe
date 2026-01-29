@@ -55,6 +55,9 @@ export default function Login() {
         case 'ADMIN':
           navigate('/admin/dashboard');
           break;
+        case 'STAFF':
+          navigate('/staff/dashboard');
+          break;
 
         default:
           setError('Role không hợp lệ');

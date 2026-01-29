@@ -17,13 +17,25 @@ import StudentDashboard from "@/pages/student/Dashboard";
 import MyCourses from "@/pages/student/MyCourses";
 import CoursePlayer from "@/pages/student/CoursePlayer";
 import StudentProfile from "@/pages/student/Profile";
+import ChatMessage from "@/pages/student/ChatMessage";
+import Achievements from "@/pages/student/Achievements";
+
+// Staff Pages & Layout
+import StaffLayout from "@/layouts/StaffLayout";
+import StaffDashboard from "@/pages/staff/StaffDashboard";
+import StaffModeration from "@/pages/staff/StaffModeration";
+import StaffReports from "@/pages/staff/StaffReports";
+import StaffDiscussions from "@/pages/staff/StaffDiscussions";
+
+
+
 
 // Instructor Pages
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 
 // Admin Pages & Layout
 // ✅ FIX 1: Import đúng file AdminLayout (đã tạo ở bước trước)
-import AdminLayout from "@/layouts/AdminLayout"; 
+import AdminLayout from "@/layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 
@@ -81,6 +93,9 @@ function App() {
             <Route path="dashboard" element={<StudentDashboard />} />
             <Route path="courses" element={<MyCourses />} />
             <Route path="profile" element={<StudentProfile />} />
+            <Route path="chat" element={<ChatMessage />} />
+            <Route path="achievements" element={<Achievements />} />
+
           </Route>
 
           {/* Learning Space (Full screen) */}
@@ -103,6 +118,23 @@ function App() {
             }
           />
 
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute allowRoles={["STAFF"]}>
+                <StaffLayout />
+              </ProtectedRoute>
+            }
+
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<StaffDashboard />} />
+            <Route path="moderation" element={<StaffModeration />} />
+            <Route path="discussions" element={<StaffDiscussions />} />
+            <Route path="reports" element={<StaffReports />} />
+
+          </Route>
+
           {/* ================= ADMIN ROUTES (ĐÃ SỬA) ================= */}
           {/* ✅ FIX 2: Dùng Nested Route để AdminLayout bao bọc các trang con */}
           <Route
@@ -115,11 +147,12 @@ function App() {
           >
             {/* Nếu vào /admin thì tự nhảy sang dashboard */}
             <Route index element={<Navigate to="dashboard" replace />} />
-            
+
+
             {/* Các trang con sẽ hiện vào vị trí <Outlet /> trong AdminLayout */}
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
-            
+
             {/* Sau này thêm route courses ở đây */}
             {/* <Route path="courses" element={<CourseManagement />} /> */}
           </Route>
