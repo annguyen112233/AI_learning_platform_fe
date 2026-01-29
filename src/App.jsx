@@ -76,6 +76,7 @@ import StudentProfile from '@/pages/student/Profile';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 //admin
 import AdminDashboard from './pages/admin/AdminDashboard';
+import ModuleManager from './pages/instructor/ModuleManager';
 
 const NotFound = () => (
   <div className="p-10 text-center">
@@ -128,7 +129,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/instructor/module/:moduleId"
+            element={
+              <ProtectedRoute allowRoles={['INSTRUCTOR']}>
+                <ModuleManager />
+              </ProtectedRoute>
+            }
+          />
           {/* ADMIN */}
           <Route
             path="/admin/dashboard"
