@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 // Context & Auth
@@ -11,12 +16,18 @@ import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
 import ResetPassword from "./pages/public/ResetPassword";
 
-// Student Pages & Layout
+// Student
 import StudentLayout from "@/layouts/StudentLayout";
 import StudentDashboard from "@/pages/student/Dashboard";
 import MyCourses from "@/pages/student/MyCourses";
 import CoursePlayer from "@/pages/student/CoursePlayer";
 import StudentProfile from "@/pages/student/Profile";
+// Instructor
+import InstructorDashboard from "./pages/instructor/InstructorDashboard";
+//admin
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import ModuleManager from "./pages/instructor/ModuleManager";
+// Student Pages & Layout
 import ChatMessage from "@/pages/student/ChatMessage";
 import Achievements from "@/pages/student/Achievements";
 import CourseDetail from '@/pages/student/CourseDetail';
@@ -28,16 +39,9 @@ import StaffModeration from "@/pages/staff/StaffModeration";
 import StaffReports from "@/pages/staff/StaffReports";
 import StaffDiscussions from "@/pages/staff/StaffDiscussions";
 
-
-
-
-// Instructor Pages
-import InstructorDashboard from "./pages/instructor/InstructorDashboard";
-
 // Admin Pages & Layout
 // ✅ FIX 1: Import đúng file AdminLayout (đã tạo ở bước trước)
 import AdminLayout from "@/layouts/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 
 // Fallback
@@ -96,9 +100,12 @@ function App() {
             <Route path="profile" element={<StudentProfile />} />
             <Route path="chat" element={<ChatMessage />} />
             <Route path="achievements" element={<Achievements />} />
+ 
             <Route path="course/:id" element={<CourseDetail />} />
 
 
+
+ 
           </Route>
 
           {/* Learning Space (Full screen) */}
@@ -120,7 +127,15 @@ function App() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/instructor/module/:moduleId"
+            element={
+              <ProtectedRoute allowRoles={["INSTRUCTOR"]}>
+                <ModuleManager />
+              </ProtectedRoute>
+            }
+          />
+          {/* ADMIN */}
           <Route
             path="/staff"
             element={
@@ -128,14 +143,12 @@ function App() {
                 <StaffLayout />
               </ProtectedRoute>
             }
-
           >
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<StaffDashboard />} />
             <Route path="moderation" element={<StaffModeration />} />
             <Route path="discussions" element={<StaffDiscussions />} />
             <Route path="reports" element={<StaffReports />} />
-
           </Route>
 
           {/* ================= ADMIN ROUTES (ĐÃ SỬA) ================= */}
@@ -150,7 +163,6 @@ function App() {
           >
             {/* Nếu vào /admin thì tự nhảy sang dashboard */}
             <Route index element={<Navigate to="dashboard" replace />} />
-
 
             {/* Các trang con sẽ hiện vào vị trí <Outlet /> trong AdminLayout */}
             <Route path="dashboard" element={<AdminDashboard />} />

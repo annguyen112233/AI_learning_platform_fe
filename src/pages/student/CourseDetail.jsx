@@ -182,10 +182,11 @@ export default function CourseDetail() {
         try {
             await enrollCourse(id);
 
-            toast.success("Đăng ký thành công!");
+            toast.success("Đăng ký thành công! Đang chuyển vào lớp học...");
 
-            // 👉 Chuyển sang trang học luôn
-            navigate(`/student/learning/${id}`);
+            setTimeout(() => {
+                navigate(`/student/learning/${id}`);
+            }, 800);
 
         } catch (error) {
             toast.error("Đăng ký thất bại.");

@@ -11,3 +11,14 @@ export const getCoursesForStudent = () => {
 export const getCourseById = (courseId) => {
   return api.get(`/courses/${courseId}`);
 }
+
+
+export const createCourse = (data) => api.post("/courses", data);
+
+export const getCoursesByInstructor = (instructorId) => {
+  return api.get("/courses/all", {
+    params: {
+      constructorId: instructorId,
+    },
+  });
+};
