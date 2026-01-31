@@ -22,3 +22,11 @@ export const getCoursesByInstructor = (instructorId) => {
     },
   });
 };
+
+export const verifyCourseAprroved = (courseId, status, reason) => {
+  return api.put(`/courses/${courseId}/verify`, {
+    status,
+    reason
+  });
+};
+

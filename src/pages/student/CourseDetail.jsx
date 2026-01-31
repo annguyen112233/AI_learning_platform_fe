@@ -189,7 +189,7 @@ export default function CourseDetail() {
             }, 800);
 
         } catch (error) {
-            toast.error("Đăng ký thất bại.");
+            toast.error(error.response?.data?.message || "Đăng ký thất bại, vui lòng thử lại");
             setEnrolling(false);
         }
     };

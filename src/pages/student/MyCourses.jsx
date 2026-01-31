@@ -207,9 +207,9 @@ export default function MyCourses() {
               >
                 {/* Card Image */}
                 <div className="h-48 relative overflow-hidden">
-                  <img src={course.image} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                    <Button variant="white" size="sm" className="w-full font-bold">
+                    <Button variant="white" size="sm" className="w-full font-bold" onClick={() => navigate(`/student/learning/${course.courseId}`)}>
                       {course.progress === 100 ? "Xem lại chứng chỉ" : "Vào học ngay"}
                     </Button>
                   </div>
