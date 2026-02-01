@@ -58,33 +58,33 @@ export default function MyCourses() {
   const [activeTab, setActiveTab] = useState('all');
 
   const [courses, setCourses] = useState([]);
-  const [lastActiveCourse, setLastActiveCourse] = useState({});
+  const [lastActiveCourse, setLastActiveCourse] = useState(null);
 
- useEffect(() => {
-  const fetchCourses = async () => {
-    try {
-      const response = await getCoursesForStudent();
-      
-      // Kiểm tra cấu trúc response thực tế từ API của bạn
-      // Giả sử API trả về { data: { data: [...] } } hoặc { data: [...] }
-      const fetchedData = response.data?.data?.data || response.data || [];
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await getCoursesForStudent();
 
-      if (Array.isArray(fetchedData)) {
-        setCourses(fetchedData);
-        if (fetchedData.length > 0) {
-          setLastActiveCourse(fetchedData[0]);
+        // Kiểm tra cấu trúc response thực tế từ API của bạn
+        // Giả sử API trả về { data: { data: [...] } } hoặc { data: [...] }
+        const fetchedData = response.data?.data?.data || response.data || [];
+
+        if (Array.isArray(fetchedData)) {
+          setCourses(fetchedData);
+          if (fetchedData.length > 0) {
+            setLastActiveCourse(fetchedData[0]);
+          }
+        } else {
+          console.error("Dữ liệu API không phải là mảng:", fetchedData);
+          setCourses([]); // Fallback về mảng rỗng để không bị crash
         }
-      } else {
-        console.error("Dữ liệu API không phải là mảng:", fetchedData);
-        setCourses([]); // Fallback về mảng rỗng để không bị crash
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách khóa học:", error);
+        setCourses([]); // Fallback khi lỗi mạng
       }
-    } catch (error) {
-      console.error("Lỗi khi lấy danh sách khóa học:", error);
-      setCourses([]); // Fallback khi lỗi mạng
-    }
-  };
-  fetchCourses();
-}, []);
+    };
+    fetchCourses();
+  }, []);
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-800">
 
@@ -123,46 +123,48 @@ export default function MyCourses() {
       <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-16 relative z-20 space-y-12">
 
         {/* 2. CONTINUE LEARNING (Featured Card) */}
-        <section>
-          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row gap-8 items-center">
-            <div className="w-full md:w-1/3 aspect-video rounded-2xl overflow-hidden relative group shadow-md">
-              <img src={lastActiveCourse.thumbnailUrl} alt="Cover" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center pl-1 shadow-lg cursor-pointer hover:scale-110 transition-transform">
-                  <Play size={24} className="text-emerald-600 fill-emerald-600" />
+        {lastActiveCourse && (
+          <section>
+            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row gap-8 items-center">
+              <div className="w-full md:w-1/3 aspect-video rounded-2xl overflow-hidden relative group shadow-md">
+                <img src={lastActiveCourse.thumbnailUrl} alt="Cover" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center pl-1 shadow-lg cursor-pointer hover:scale-110 transition-transform">
+                    <Play size={24} className="text-emerald-600 fill-emerald-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 w-full space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md mb-2 inline-block">Học gần nhất</span>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-1">{lastActiveCourse.title}</h2>
+                    <p className="text-slate-500 text-sm flex items-center gap-2">
+                      <Clock size={14} /> Truy cập {lastActiveCourse.lastAccessed} • {lastActiveCourse.instructor}
+                    </p>
+                  </div>
+                  <Button variant="ghost" className="hidden md:flex"><MoreHorizontal size={20} /></Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm font-medium">
+                    <span className="text-slate-600">Tiến độ hiện tại</span>
+                    <span className="text-slate-900">{lastActiveCourse.progress}%</span>
+                  </div>
+                  <ProgressBar progress={lastActiveCourse.progress} className="h-3" />
+                  <p className="text-xs text-slate-400 pt-1">Bạn đang làm rất tốt! Chỉ còn {lastActiveCourse.totalLessons - lastActiveCourse.completedLessons} bài nữa để hoàn thành.</p>
+                </div>
+
+                <div className="pt-2">
+                  <Button size="lg" onClick={() => navigate(`/student/learning/${lastActiveCourse.courseId}`)}>
+                    Tiếp tục học ngay <ArrowRight size={18} />
+                  </Button>
                 </div>
               </div>
             </div>
-
-            <div className="flex-1 w-full space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md mb-2 inline-block">Học gần nhất</span>
-                  <h2 className="text-2xl font-bold text-slate-800 mb-1">{lastActiveCourse.title}</h2>
-                  <p className="text-slate-500 text-sm flex items-center gap-2">
-                    <Clock size={14} /> Truy cập {lastActiveCourse.lastAccessed} • {lastActiveCourse.instructor}
-                  </p>
-                </div>
-                <Button variant="ghost" className="hidden md:flex"><MoreHorizontal size={20} /></Button>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-slate-600">Tiến độ hiện tại</span>
-                  <span className="text-slate-900">{lastActiveCourse.progress}%</span>
-                </div>
-                <ProgressBar progress={lastActiveCourse.progress} className="h-3" />
-                <p className="text-xs text-slate-400 pt-1">Bạn đang làm rất tốt! Chỉ còn {lastActiveCourse.totalLessons - lastActiveCourse.completedLessons} bài nữa để hoàn thành.</p>
-              </div>
-
-              <div className="pt-2">
-                <Button size="lg" onClick={() => navigate(`/student/learning/${lastActiveCourse.courseId}`)}>
-                  Tiếp tục học ngay <ArrowRight size={18} />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
 
         {/* 3. ALL COURSES (Main List) */}

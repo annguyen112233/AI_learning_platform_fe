@@ -35,7 +35,7 @@ const LessonCard = ({ lesson, isActive, onClick }) => {
         {isCompleted ? <CheckCircle2 size={16} strokeWidth={3} /> :
           isLocked ? <Lock size={14} /> :
             isActive ? <Play size={14} fill="currentColor" /> :
-              <span className="font-bold text-xs">{lesson.id}</span>}
+              <span className="font-bold text-xs">{lesson.order}</span>}
       </div>
 
       {/* Thông tin bài */}
@@ -93,12 +93,14 @@ export default function CoursePlayer() {
         const mappedChapters = (data.modules || []).map(mod => ({
           id: mod.moduleId,
           title: mod.title,
-          lessons: (mod.lessons || []).map(les => ({
+          lessons: (mod.lessons || []).map((les, index) => ({
             id: les.lessonId,
+            order: index + 1,
             title: les.title,
             duration: "10:00", // Placeholder
             status: 'unlocked', // Logic check status nên làm ở backend
             videoUrl: les.videoUrl,
+            documentUrl: les.documentUrl || "Chưa cập nhật tài liệu",
             description: "Mô tả bài học..."
           }))
         }));
@@ -259,18 +261,28 @@ export default function CoursePlayer() {
                   <p className="text-slate-600 leading-relaxed">
                     {currentLesson?.description || "Chưa có mô tả chi tiết cho bài học này."}
                   </p>
-                  <div className="mt-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm inline-flex items-center gap-4">
-                    <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-                      <Download size={24} />
+                  {currentLesson?.documentUrl && (
+                    <div className="mt-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm inline-flex items-center gap-4">
+                      <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+                        <FileText size={24} />
+                      </div>
+
+                      <div>
+                        <h5 className="font-bold text-slate-800 text-sm">Tài liệu đính kèm</h5>
+                        <p className="text-xs text-slate-500">PDF / Tài liệu học</p>
+                      </div>
+
+                      <a
+                        href={currentLesson.documentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 ml-4"
+                      >
+                        Tải xuống
+                      </a>
                     </div>
-                    <div>
-                      <h5 className="font-bold text-slate-800 text-sm">Tài liệu đính kèm</h5>
-                      <p className="text-xs text-slate-500">Source code & PDF slide</p>
-                    </div>
-                    <button className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 ml-4">
-                      Tải xuống
-                    </button>
-                  </div>
+                  )}
+
                 </div>
               )}
 

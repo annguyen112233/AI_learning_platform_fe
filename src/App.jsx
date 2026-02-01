@@ -16,6 +16,8 @@ import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
 import ResetPassword from "./pages/public/ResetPassword";
 
+import PaymentResult from './pages/PaymentResult';
+
 // Student
 import StudentLayout from "@/layouts/StudentLayout";
 import StudentDashboard from "@/pages/student/Dashboard";
@@ -102,12 +104,12 @@ function App() {
             <Route path="profile" element={<StudentProfile />} />
             <Route path="chat" element={<ChatMessage />} />
             <Route path="achievements" element={<Achievements />} />
- 
+
             <Route path="course/:id" element={<CourseDetail />} />
 
 
 
- 
+
           </Route>
 
           {/* Learning Space (Full screen) */}
@@ -176,8 +178,10 @@ function App() {
             {/* Sau này thêm route courses ở đây */}
             {/* <Route path="courses" element={<CourseManagement />} /> */}
           </Route>
-
+          <Route path="/payment-result" element={<PaymentResult />} />
           {/* ================= CATCH ALL ================= */}
+
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
