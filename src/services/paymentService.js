@@ -15,3 +15,7 @@ export const createPaymentVnpay = (subscriptionPlan, amount, orderInfo) => {
         orderInfo
     });
 }
+
+export const getMyPayments = () => {
+  return api.get("/identity/payment/my-payments");
+};
