@@ -17,14 +17,11 @@ import {
   Calendar,
   BookOpen,
   Users,
-  TrendingUp,
   DollarSign,
-  Star,
   X,
   Smartphone,
   Globe,
   Sparkles,
-  Bot,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -37,6 +34,7 @@ import {
 import {
   createPaymentVnpay,
   createPaymentMomo,
+  getMyPayments,
 } from "@/services/paymentService";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -46,6 +44,13 @@ import vi from "date-fns/locale/vi";
 import "react-datepicker/dist/react-datepicker.css";
 
 registerLocale("vi", vi);
+
+// ✅ ĐỊNH NGHĨA THỨ TỰ GÓI (dùng để so sánh)
+const PLAN_ORDER = {
+  BASIC: 1,
+  PREMIUM: 2,
+  ENTERPRISE: 3,
+};
 
 // --- ĐỊNH NGHĨA CÁC GÓI NÂNG CẤP CHO GIẢNG VIÊN ---
 const INSTRUCTOR_PLANS = [
@@ -62,7 +67,6 @@ const INSTRUCTOR_PLANS = [
       "AI chấm điểm tự động",
       "Hỗ trợ qua Email",
     ],
-    aiFeatures: [],
     color: "border-slate-200 bg-white",
     btnColor: "bg-slate-100 text-slate-600 hover:bg-slate-200",
     icon: User,
@@ -82,7 +86,6 @@ const INSTRUCTOR_PLANS = [
       "Phân tích chi tiết học viên",
       "Hỗ trợ ưu tiên 24/7",
     ],
-    aiFeatures: [],
     recommended: true,
     color: "border-emerald-500 bg-emerald-50/20",
     btnColor:
@@ -104,7 +107,6 @@ const INSTRUCTOR_PLANS = [
       "AI phân tích hiệu quả giảng dạy",
       "API tích hợp & Hỗ trợ VIP",
     ],
-    aiFeatures: [],
     color: "border-purple-500 bg-purple-50/20",
     btnColor: "bg-purple-600 text-white hover:bg-purple-700 shadow-purple-200",
     icon: Crown,
@@ -119,10 +121,12 @@ export default function InstructorProfile() {
   const fileInputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  // State cho phần nâng cấp
+  // ✅ STATE CHO PAYMENT
+  const [completedPlan, setCompletedPlan] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   // --- STATE DATA ---
   const [formData, setFormData] = useState({
@@ -163,12 +167,183 @@ export default function InstructorProfile() {
     return getPasswordStrength(formData.newPassword || "");
   }, [formData.newPassword]);
 
-  // --- PAYMENT LOGIC ---
+  // ✅ HELPER: Extract plan từ notes
+  // Format: "Subscription Plan: PREMIUM" hoặc "Subscription Plan: BASIC"
+  const extractPlanFromNotes = (notes) => {
+    if (!notes) {
+      console.log("⚠️ No notes provided");
+      return null;
+    }
+
+    const match = notes.match(/Subscription Plan:\s*(\w+)/i);
+    const plan = match ? match[1].toUpperCase() : null;
+
+    console.log("🔍 Extracting plan from notes:", {
+      notes,
+      extracted: plan,
+      isValid: plan && PLAN_ORDER[plan] !== undefined,
+    });
+
+    // Validate plan exists in PLAN_ORDER
+    if (plan && PLAN_ORDER[plan] === undefined) {
+      console.warn("⚠️ Extracted plan not found in PLAN_ORDER:", plan);
+      return null;
+    }
+
+    return plan;
+  };
+
+  // ✅ FETCH MY PAYMENTS
+  const fetchMyPayments = async () => {
+    try {
+      setLoadingPayments(true);
+      console.log("🔄 Fetching my payments...");
+
+      const res = await getMyPayments();
+
+      console.log("✅ Raw API Response:", res);
+      console.log("📦 res.data:", res.data);
+      console.log("📦 res.data.data:", res.data?.data);
+
+      // ✅ XỬ LÝ CÁC TRƯỜNG HỢP RESPONSE KHÁC NHAU
+      let paymentsData = [];
+
+      if (res.data?.data) {
+        // Trường hợp: { data: { data: [...] } }
+        paymentsData = res.data.data;
+        console.log("📋 Payments from res.data.data:", paymentsData);
+      } else if (Array.isArray(res.data)) {
+        // Trường hợp: { data: [...] }
+        paymentsData = res.data;
+        console.log("📋 Payments from res.data:", paymentsData);
+      } else if (res?.data) {
+        // Trường hợp khác: kiểm tra res.data
+        paymentsData = res.data;
+        console.log("📋 Payments from res.data (fallback):", paymentsData);
+      }
+
+      // ✅ ĐẢM BẢO LUÔN LÀ ARRAY
+      if (!Array.isArray(paymentsData)) {
+        console.warn("⚠️ Payments data is not an array:", paymentsData);
+        paymentsData = [];
+      }
+
+      console.log("✅ Total payments found:", paymentsData.length);
+
+      // Lọc các payment COMPLETE/COMPLETED
+      const completedPayments = paymentsData
+        .filter((p) => {
+          console.log("🔍 Checking payment:", {
+            id: p.paymentId || p.id,
+            status: p.status,
+            notes: p.notes,
+          });
+          // ✅ Accept both COMPLETE and COMPLETED
+          return p.status === "COMPLETE" || p.status === "COMPLETED";
+        })
+        .map((p) => ({
+          ...p,
+          plan: extractPlanFromNotes(p.notes),
+        }))
+        .filter((p) => {
+          if (!p.plan) {
+            console.warn("⚠️ Payment has no plan extracted:", p);
+          }
+          return p.plan;
+        });
+
+      console.log("✅ Completed Payments with plans:", completedPayments);
+
+      if (completedPayments.length === 0) {
+        console.log("❌ No completed payments with valid plans found");
+        setCompletedPlan(null);
+        return;
+      }
+
+      // Tìm gói cao nhất
+      const highestPlan = completedPayments.reduce((max, cur) => {
+        console.log("🔄 Comparing plans:", {
+          current: cur.plan,
+          currentOrder: PLAN_ORDER[cur.plan],
+          max: max.plan,
+          maxOrder: PLAN_ORDER[max.plan],
+        });
+        return PLAN_ORDER[cur.plan] > PLAN_ORDER[max.plan] ? cur : max;
+      });
+
+      console.log("💎 Highest Plan Found:", {
+        plan: highestPlan.plan,
+        order: PLAN_ORDER[highestPlan.plan],
+        payment: highestPlan,
+      });
+
+      setCompletedPlan(highestPlan.plan);
+    } catch (error) {
+      console.error("❌ Get my payments failed:", error);
+      console.error("❌ Error details:", error?.response?.data);
+      setCompletedPlan(null);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  // ✅ CHECK XEM GÓI CÓ BỊ LOCK KHÔNG
+  // Logic: Nếu user đã thanh toán COMPLETE gói X, thì khóa:
+  // - Gói X (đã mua rồi)
+  // - Các gói thấp hơn X (downgrade không có ý nghĩa)
+  // Ví dụ: Đã mua PREMIUM → lock BASIC và PREMIUM, chỉ còn ENTERPRISE
+  const isPlanLocked = (planId) => {
+    if (!completedPlan) {
+      console.log("🔓 No completed plan - all plans unlocked");
+      return false;
+    }
+
+    const planOrder = PLAN_ORDER[planId];
+    const completedOrder = PLAN_ORDER[completedPlan];
+
+    // Lock nếu planId <= completedPlan
+    // Ví dụ: completedPlan = PREMIUM (order 2)
+    // - BASIC (order 1) → 1 <= 2 → LOCKED ✅
+    // - PREMIUM (order 2) → 2 <= 2 → LOCKED ✅
+    // - ENTERPRISE (order 3) → 3 <= 2 → UNLOCKED ❌
+    const isLocked = planOrder <= completedOrder;
+
+    console.log("🔒 Lock Check:", {
+      planId,
+      planOrder,
+      completedPlan,
+      completedOrder,
+      isLocked,
+      reason: isLocked
+        ? `Đã sở hữu ${completedPlan} (order ${completedOrder}) >= ${planId} (order ${planOrder})`
+        : `${planId} (order ${planOrder}) cao hơn ${completedPlan} (order ${completedOrder})`,
+    });
+
+    return isLocked;
+  };
+
+  // ✅ XỬ LÝ MUA GÓI (với debug logs)
   const handleBuyPlan = (plan) => {
+    console.log("🛒 Attempting to buy plan:", plan.id);
+    console.log("📊 Current state:", {
+      completedPlan,
+      isLocked: isPlanLocked(plan.id),
+    });
+
+    if (isPlanLocked(plan.id)) {
+      console.log("🚫 Plan is locked - showing toast");
+      toast("Bạn đã sở hữu gói này hoặc gói cao hơn", {
+        icon: "ℹ️",
+      });
+      return;
+    }
+
+    console.log("✅ Plan is available - opening payment modal");
     setSelectedPlan(plan);
     setShowPaymentModal(true);
   };
 
+  // ✅ XỬ LÝ THANH TOÁN
   const handleProcessPayment = async (method) => {
     if (!selectedPlan) return;
 
@@ -215,6 +390,30 @@ export default function InstructorProfile() {
     }
   };
 
+  // ✅ FETCH DATA KHI MOUNT + REFETCH SAU PAYMENT
+  useEffect(() => {
+    fetchProfileData();
+    fetchMyPayments(); // ✅ Gọi fetch payments lần đầu
+
+    // ✅ Kiểm tra URL params để biết user vừa thanh toán xong
+    const urlParams = new URLSearchParams(window.location.search);
+    const vnpayResponse = urlParams.get("vnp_ResponseCode");
+    const momoResponse = urlParams.get("resultCode");
+
+    if (vnpayResponse || momoResponse) {
+      console.log("💰 Detected payment callback - refetching payments...");
+
+      // Đợi 2s để backend xử lý xong webhook
+      setTimeout(() => {
+        fetchMyPayments();
+        toast.success("Đang kiểm tra trạng thái thanh toán...");
+      }, 2000);
+
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // --- API CALLS ---
   const fetchProfileData = async () => {
     try {
@@ -240,10 +439,6 @@ export default function InstructorProfile() {
       console.error("Lỗi khi lấy dữ liệu hồ sơ:", error);
     }
   };
-
-  useEffect(() => {
-    fetchProfileData();
-  }, []);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -387,14 +582,12 @@ export default function InstructorProfile() {
                   )}
                 </div>
 
-                {/* Loading overlay */}
                 {loading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-full z-10">
                     <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 )}
 
-                {/* Camera Button */}
                 <button
                   type="button"
                   onClick={handleCameraClick}
@@ -417,6 +610,31 @@ export default function InstructorProfile() {
               {formData.fullName || "Giảng viên"}
             </h2>
             <p className="text-slate-500 text-sm mb-4">{formData.email}</p>
+
+            {/* ✅ HIỂN THỊ GÓI HIỆN TẠI */}
+            {loadingPayments ? (
+              <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-slate-500">
+                    Đang kiểm tra...
+                  </span>
+                </div>
+              </div>
+            ) : completedPlan ? (
+              <div className="mt-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl">
+                <div className="flex items-center justify-center gap-2">
+                  <Crown size={16} className="text-emerald-600" />
+                  <span className="text-xs font-bold text-emerald-700">
+                    Gói {completedPlan}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-xs text-slate-500">Gói miễn phí</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-2 mt-6 pt-6 border-t border-slate-100">
               <div className="text-center">
@@ -685,7 +903,6 @@ export default function InstructorProfile() {
                         })
                       }
                     />
-                    {/* Strength Indicator */}
                     {formData.newPassword && (
                       <div className="mt-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
                         <div className="flex justify-between items-center mb-2">
@@ -789,84 +1006,120 @@ export default function InstructorProfile() {
                     Chọn gói phù hợp để mở khóa toàn bộ tính năng giảng dạy
                     chuyên nghiệp
                   </p>
+
+                  {/* ✅ HIỂN THỊ GÓI HIỆN TẠI */}
+                  {loadingPayments && (
+                    <div className="mt-4 text-sm text-slate-500 flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                      Đang kiểm tra gói hiện tại...
+                    </div>
+                  )}
+                  {!loadingPayments && completedPlan && (
+                    <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold">
+                      <Crown size={16} />
+                      Bạn đang sử dụng gói {completedPlan}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-start">
-                  {INSTRUCTOR_PLANS.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className={`relative rounded-2xl p-6 border-2 flex flex-col h-full transition-all hover:shadow-xl ${plan.color} ${plan.recommended ? "scale-105 shadow-lg z-10" : "hover:-translate-y-1"}`}
-                    >
-                      {plan.recommended && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md uppercase tracking-wider">
-                          Khuyên dùng
-                        </div>
-                      )}
+                  {INSTRUCTOR_PLANS.map((plan) => {
+                    const isLocked = isPlanLocked(plan.id);
 
-                      {/* Header */}
-                      <div className="mb-6">
-                        <div className="flex justify-between items-start mb-2">
-                          <div
-                            className={`p-2 rounded-lg ${plan.recommended ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-600"}`}
-                          >
-                            <plan.icon size={24} />
-                          </div>
-                          {plan.id === "ENTERPRISE" && (
-                            <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-1 rounded">
-                              VIP
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-800">
-                          {plan.name}
-                        </h3>
-                        <p className="text-sm text-slate-500 mt-1">
-                          {plan.description}
-                        </p>
-                      </div>
-
-                      {/* Price */}
-                      <div className="mb-6">
-                        <span className="text-3xl font-extrabold text-slate-900">
-                          {plan.price.toLocaleString()}đ
-                        </span>
-                        <span className="text-slate-500 text-sm font-medium">
-                          {plan.period}
-                        </span>
-                      </div>
-
-                      {/* Button */}
-                      <button
-                        onClick={() => handleBuyPlan(plan)}
-                        className={`w-full py-3 rounded-xl font-bold text-sm mb-6 transition-all active:scale-95 shadow-lg ${plan.btnColor}`}
+                    return (
+                      <div
+                        key={plan.id}
+                        className={`relative rounded-2xl p-6 border-2 flex flex-col h-full transition-all ${
+                          isLocked
+                            ? "opacity-60 border-slate-200 bg-slate-50"
+                            : plan.color
+                        } ${plan.recommended && !isLocked ? "scale-105 shadow-lg z-10" : "hover:-translate-y-1 hover:shadow-xl"}`}
                       >
-                        Chọn gói này
-                      </button>
+                        {/* ✅ BADGE ĐÃ SỞ HỮU */}
+                        {isLocked && (
+                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-slate-500 to-slate-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md uppercase tracking-wider flex items-center gap-1">
+                            <Check size={12} />
+                            Đã sở hữu
+                          </div>
+                        )}
 
-                      {/* Features List */}
-                      <div className="space-y-4 flex-1">
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 uppercase mb-3">
-                            Tính năng nổi bật
+                        {plan.recommended && !isLocked && (
+                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md uppercase tracking-wider">
+                            Khuyên dùng
+                          </div>
+                        )}
+
+                        {/* Header */}
+                        <div className="mb-6">
+                          <div className="flex justify-between items-start mb-2">
+                            <div
+                              className={`p-2 rounded-lg ${plan.recommended && !isLocked ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-600"}`}
+                            >
+                              <plan.icon size={24} />
+                            </div>
+                            {plan.id === "ENTERPRISE" && !isLocked && (
+                              <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-1 rounded">
+                                VIP
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-800">
+                            {plan.name}
+                          </h3>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {plan.description}
                           </p>
-                          <ul className="space-y-3">
-                            {plan.features.map((feature, idx) => (
-                              <li
-                                key={idx}
-                                className="flex items-start gap-2 text-sm text-slate-600"
-                              >
-                                <Check
-                                  size={16}
-                                  className={`mt-0.5 shrink-0 ${plan.recommended ? "text-emerald-500" : "text-slate-400"}`}
-                                />
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
+                        </div>
+
+                        {/* Price */}
+                        <div className="mb-6">
+                          <span className="text-3xl font-extrabold text-slate-900">
+                            {plan.price.toLocaleString()}đ
+                          </span>
+                          <span className="text-slate-500 text-sm font-medium">
+                            {plan.period}
+                          </span>
+                        </div>
+
+                        {/* Button */}
+                        <button
+                          disabled={isLocked}
+                          onClick={() => handleBuyPlan(plan)}
+                          className={`w-full py-3 rounded-xl font-bold text-sm mb-6 transition-all ${
+                            isLocked
+                              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                              : plan.btnColor +
+                                " hover:shadow-lg active:scale-95"
+                          }`}
+                        >
+                          {isLocked ? "Đã sở hữu" : "Chọn gói này"}
+                        </button>
+
+                        {/* Features List */}
+                        <div className="space-y-4 flex-1">
+                          <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase mb-3">
+                              Tính năng nổi bật
+                            </p>
+                            <ul className="space-y-3">
+                              {plan.features.map((feature, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-sm text-slate-600"
+                                >
+                                  <Check
+                                    size={16}
+                                    className={`mt-0.5 shrink-0 ${plan.recommended && !isLocked ? "text-emerald-500" : "text-slate-400"}`}
+                                  />
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="mt-10 flex flex-col md:flex-row justify-center items-center gap-6 text-xs text-slate-400">
@@ -889,15 +1142,12 @@ export default function InstructorProfile() {
       {/* Payment Modal */}
       {showPaymentModal && selectedPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowPaymentModal(false)}
           ></div>
 
-          {/* Modal Content */}
           <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Header */}
             <div className="bg-slate-50 p-6 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-slate-800">Thanh toán</h3>
@@ -913,9 +1163,7 @@ export default function InstructorProfile() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6 space-y-6">
-              {/* Thông tin gói */}
               <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl flex justify-between items-center">
                 <div>
                   <p className="text-xs font-bold text-emerald-600 uppercase tracking-wide">
@@ -933,17 +1181,15 @@ export default function InstructorProfile() {
                 </div>
               </div>
 
-              {/* Lựa chọn thanh toán */}
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-slate-700">
                   Chọn cổng thanh toán:
                 </p>
 
-                {/* Nút MOMO */}
                 <button
                   onClick={() => handleProcessPayment("MOMO")}
                   disabled={processingPayment}
-                  className="w-full group relative flex items-center justify-between p-4 rounded-xl border-2 border-slate-100 hover:border-[#A50064] hover:bg-[#A50064]/5 transition-all duration-200"
+                  className="w-full group relative flex items-center justify-between p-4 rounded-xl border-2 border-slate-100 hover:border-[#A50064] hover:bg-[#A50064]/5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-lg bg-[#A50064] text-white flex items-center justify-center font-bold text-xs shadow-md">
@@ -965,11 +1211,10 @@ export default function InstructorProfile() {
                   )}
                 </button>
 
-                {/* Nút VNPAY */}
                 <button
                   onClick={() => handleProcessPayment("VNPAY")}
                   disabled={processingPayment}
-                  className="w-full group relative flex items-center justify-between p-4 rounded-xl border-2 border-slate-100 hover:border-[#005BAA] hover:bg-[#005BAA]/5 transition-all duration-200"
+                  className="w-full group relative flex items-center justify-between p-4 rounded-xl border-2 border-slate-100 hover:border-[#005BAA] hover:bg-[#005BAA]/5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#005BAA] to-[#ED1C24] text-white flex items-center justify-center font-bold text-[10px] shadow-md leading-tight">
@@ -993,7 +1238,6 @@ export default function InstructorProfile() {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="p-4 bg-slate-50 text-center text-[11px] text-slate-400">
               Bằng việc thanh toán, bạn đồng ý với Điều khoản dịch vụ của chúng
               tôi.

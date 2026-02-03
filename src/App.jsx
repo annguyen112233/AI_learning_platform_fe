@@ -16,7 +16,7 @@ import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
 import ResetPassword from "./pages/public/ResetPassword";
 
-import PaymentResult from './pages/PaymentResult';
+import PaymentResult from "./pages/PaymentResult";
 
 // Student
 import StudentLayout from "@/layouts/StudentLayout";
@@ -32,7 +32,7 @@ import ModuleManager from "./pages/instructor/ModuleManager";
 // Student Pages & Layout
 import ChatMessage from "@/pages/student/ChatMessage";
 import Achievements from "@/pages/student/Achievements";
-import CourseDetail from '@/pages/student/CourseDetail';
+import CourseDetail from "@/pages/student/CourseDetail";
 
 // Staff Pages & Layout
 import StaffLayout from "@/layouts/StaffLayout";
@@ -106,10 +106,6 @@ function App() {
             <Route path="achievements" element={<Achievements />} />
 
             <Route path="course/:id" element={<CourseDetail />} />
-
-
-
-
           </Route>
 
           {/* Learning Space (Full screen) */}
@@ -180,7 +176,6 @@ function App() {
           </Route>
           <Route path="/payment-result" element={<PaymentResult />} />
           {/* ================= CATCH ALL ================= */}
-
 
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -34,3 +34,27 @@ export const createLessonByUpload = ({
 export const getLessonsByModule = (moduleId) => {
   return api.get(`/lessons/module/${moduleId}`);
 };
+
+export const generateQuizForLesson = (lessonId) => {
+  return api.post(`/lessons/${lessonId}/generate-quiz`);
+};
+
+// ✅ Get latest quiz của lesson
+export const getLessonQuiz = (lessonId) => {
+  return api.get(`/lessons/${lessonId}/quiz`);
+};
+
+// ✅ Get all quizzes của lesson
+export const getAllLessonQuizzes = (lessonId) => {
+  return api.get(`/lessons/${lessonId}/quizzes`);
+};
+
+// ✅ Delete lesson
+export const deleteLesson = (lessonId) => {
+  return api.delete(`/lessons/${lessonId}`);
+};
+
+// ✅ Delete video from lesson
+export const deleteLessonVideo = (lessonId) => {
+  return api.delete(`/lessons/${lessonId}/video`);
+};
