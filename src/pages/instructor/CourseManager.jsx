@@ -12,8 +12,13 @@ import {
   Layers,
   X,
   List,
+  Send, // ✅ NEW
+  AlertCircle, // ✅ NEW
 } from "lucide-react";
-import { getCoursesByInstructor } from "../../services/courseService";
+import {
+  getCoursesByInstructor,
+  submitCourseForApproval,
+} from "../../services/courseService"; // ✅ IMPORT
 import { getModulesByCourse } from "../../services/moduleService";
 import api from "../../services/api";
 import CreateModule from "./CreateModule";
@@ -25,6 +30,7 @@ export default function CourseManager({ reloadKey }) {
   const [expandedCourseId, setExpandedCourseId] = useState(null);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(null); // ✅ NEW
 
   /* ================= FETCH COURSES ================= */
   const fetchCourses = async () => {
@@ -35,7 +41,18 @@ export default function CourseManager({ reloadKey }) {
       const instructorId = meRes.data.data.id;
 
       const res = await getCoursesByInstructor(instructorId);
-      setCourses(res.data.data || []);
+      const coursesData = res.data.data || [];
+
+      setCourses(coursesData);
+
+      // ✅ Pre-populate modulesMap from course data if available
+      const newModulesMap = {};
+      coursesData.forEach((course) => {
+        if (course.modules && course.modules.length > 0) {
+          newModulesMap[course.courseId] = course.modules;
+        }
+      });
+      setModulesMap((prev) => ({ ...prev, ...newModulesMap }));
     } catch (error) {
       console.error("Failed to fetch courses", error);
     } finally {
@@ -111,7 +128,57 @@ export default function CourseManager({ reloadKey }) {
   /* ================= HANDLE MODULE CREATED ================= */
   const handleModuleCreated = (courseId) => {
     fetchModules(courseId);
-    setSelectedCourseId(null); // Close create form after success
+    setSelectedCourseId(null);
+  };
+
+  /* ================= ✅ SUBMIT COURSE FOR APPROVAL ================= */
+  const handleSubmitForApproval = async (courseId) => {
+    const modules = modulesMap[courseId] || [];
+
+    // Check if course has at least 3 modules
+    if (modules.length < 3) {
+      alert("❌ Khóa học cần có ít nhất 3 modules để gửi duyệt!");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "⚠️ Bạn có chắc chắn muốn gửi khóa học này để được duyệt?\n\n" +
+        "Sau khi gửi, bạn sẽ không thể chỉnh sửa cho đến khi được xét duyệt.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setSubmitting(courseId);
+      const response = await submitCourseForApproval(courseId);
+
+      // ✅ Update course status in state
+      const updatedCourse = response.data.data;
+
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.courseId === courseId ? updatedCourse : course,
+        ),
+      );
+
+      // ✅ Update modules if included in response
+      if (updatedCourse.modules) {
+        setModulesMap((prev) => ({
+          ...prev,
+          [courseId]: updatedCourse.modules,
+        }));
+      }
+
+      alert("✅ Gửi khóa học thành công! Vui lòng chờ staff xét duyệt.");
+    } catch (error) {
+      console.error("Failed to submit course for approval", error);
+      const errorMsg =
+        error.response?.data?.message ||
+        "Không thể gửi khóa học. Vui lòng thử lại!";
+      alert("❌ " + errorMsg);
+    } finally {
+      setSubmitting(null);
+    }
   };
 
   /* ================= EFFECT ================= */
@@ -152,6 +219,14 @@ export default function CourseManager({ reloadKey }) {
             const isCreateFormOpen = selectedCourseId === course.courseId;
             const modules = modulesMap[course.courseId] || [];
 
+            // ✅ Status checks
+            const isDraft =
+              course.status === "DRAFT" || course.status === "draft";
+            const isPending = course.status === "PENDING_APPROVAL";
+            const isApproved = course.status === "APPROVED";
+            const isRejected = course.status === "REJECTED";
+            const isSubmittingThis = submitting === course.courseId;
+
             return (
               <div key={course.courseId}>
                 {/* COURSE CARD */}
@@ -189,31 +264,26 @@ export default function CourseManager({ reloadKey }) {
                     <div className="absolute top-3 right-3">
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm shadow-sm ${
-                          course.status === "APPROVED" ||
-                          course.status === "active"
+                          isApproved
                             ? "bg-emerald-100/90 text-emerald-700"
-                            : course.status === "PENDING"
+                            : isPending
                               ? "bg-blue-100/90 text-blue-700"
-                              : course.status === "REJECTED"
+                              : isRejected
                                 ? "bg-red-100/90 text-red-700"
-                                : course.status === "DRAFT" ||
-                                    course.status === "draft"
+                                : isDraft
                                   ? "bg-amber-100/90 text-amber-700"
                                   : "bg-slate-100/90 text-slate-600"
                         }`}
                       >
-                        {course.status === "APPROVED"
+                        {isApproved
                           ? "Đã duyệt"
-                          : course.status === "active"
-                            ? "Đang hoạt động"
-                            : course.status === "PENDING"
-                              ? "Chờ duyệt"
-                              : course.status === "REJECTED"
-                                ? "Từ chối"
-                                : course.status === "DRAFT" ||
-                                    course.status === "draft"
-                                  ? "Bản nháp"
-                                  : course.status}
+                          : isPending
+                            ? "Chờ duyệt"
+                            : isRejected
+                              ? "Từ chối"
+                              : isDraft
+                                ? "Bản nháp"
+                                : course.status}
                       </span>
                     </div>
                   </div>
@@ -226,7 +296,7 @@ export default function CourseManager({ reloadKey }) {
                     </h2>
 
                     {/* Course Info */}
-                    <div className="space-y-2 text-sm text-slate-600">
+                    <div className="space-y-2 text-sm text-slate-600 mb-4">
                       <div className="flex items-center gap-2">
                         <DollarSign
                           size={16}
@@ -256,6 +326,26 @@ export default function CourseManager({ reloadKey }) {
                         </span>
                       </div>
                     </div>
+
+                    {/* ✅ Rejection Reason */}
+                    {isRejected && course.rejectionReason && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle
+                            size={16}
+                            className="text-red-600 flex-shrink-0 mt-0.5"
+                          />
+                          <div>
+                            <p className="text-xs font-semibold text-red-700 mb-1">
+                              Lý do từ chối:
+                            </p>
+                            <p className="text-xs text-red-600">
+                              {course.rejectionReason}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Buttons */}
@@ -270,11 +360,65 @@ export default function CourseManager({ reloadKey }) {
 
                     <button
                       onClick={() => handleToggleCreateModule(course.courseId)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
+                      disabled={isPending || isApproved}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                        isPending || isApproved
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                          : "border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
+                      }`}
                     >
                       <Plus size={18} />
                       Thêm Module
                     </button>
+
+                    {/* ✅ Submit for Approval Button */}
+                    {isDraft && (
+                      <>
+                        <button
+                          onClick={() =>
+                            handleSubmitForApproval(course.courseId)
+                          }
+                          disabled={isSubmittingThis || modules.length < 3}
+                          className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all ${
+                            modules.length < 3
+                              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                              : isSubmittingThis
+                                ? "bg-orange-400 text-white cursor-wait"
+                                : "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-sm"
+                          }`}
+                        >
+                          {isSubmittingThis ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Đang gửi...
+                            </>
+                          ) : (
+                            <>
+                              <Send size={18} />
+                              Gửi duyệt
+                            </>
+                          )}
+                        </button>
+
+                        {/* ✅ Module count warning */}
+                        {modules.length < 3 && (
+                          <div className="text-center py-1.5 px-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-xs text-amber-700 font-medium">
+                              ⚠️ Cần ít nhất 3 modules ({modules.length}/3)
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* ✅ Pending status indicator */}
+                    {isPending && (
+                      <div className="text-center py-2.5 px-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <p className="text-sm text-blue-700 font-medium">
+                          ⏳ Đang chờ staff xét duyệt
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -294,7 +438,7 @@ export default function CourseManager({ reloadKey }) {
                                 {course.title}
                               </h3>
                               <p className="text-emerald-100 text-sm">
-                                Danh sách Modules
+                                Danh sách Modules ({modules.length})
                               </p>
                             </div>
                           </div>
@@ -313,6 +457,7 @@ export default function CourseManager({ reloadKey }) {
                               {modules.map((m) => {
                                 const moduleId =
                                   m.moduleId || m.id || m.module_id;
+                                const lessonCount = m.lessons?.length || 0;
 
                                 return (
                                   <div
@@ -329,6 +474,11 @@ export default function CourseManager({ reloadKey }) {
                                           <h4 className="font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">
                                             {m.title}
                                           </h4>
+                                          {lessonCount > 0 && (
+                                            <p className="text-xs text-slate-500 mt-0.5">
+                                              {lessonCount} bài học
+                                            </p>
+                                          )}
                                         </div>
                                       </div>
                                       <ArrowRight

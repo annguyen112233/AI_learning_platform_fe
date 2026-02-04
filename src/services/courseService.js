@@ -30,3 +30,6 @@ export const verifyCourseAprroved = (courseId, status, reason) => {
   });
 };
 
+export const submitCourseForApproval = (courseId) => {
+  return api.post(`/courses/${courseId}/submit-approval`);
+};
