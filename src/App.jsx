@@ -8,32 +8,31 @@ import { Toaster } from "react-hot-toast";
 
 // Context & Auth
 import { AuthProvider } from "@/context/AuthContext";
-import { SubscriptionProvider } from "@/context/SubscriptionContext"
+import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 
 // Public Pages
 import Login from "@/pages/public/Login";
-import Register from "./pages/public/Register";
-import ForgotPassword from "./pages/public/ForgotPassword";
-import ResetPassword from "./pages/public/ResetPassword";
+import Register from "@/pages/public/Register";
+import ForgotPassword from "@/pages/public/ForgotPassword";
+import ResetPassword from "@/pages/public/ResetPassword";
+import PaymentResult from "@/pages/PaymentResult";
 
-import PaymentResult from './pages/PaymentResult';
-
-// Student
+// Student Pages & Layout
 import StudentLayout from "@/layouts/StudentLayout";
 import StudentDashboard from "@/pages/student/Dashboard";
 import MyCourses from "@/pages/student/MyCourses";
 import CoursePlayer from "@/pages/student/CoursePlayer";
 import StudentProfile from "@/pages/student/Profile";
-// Instructor
-import InstructorDashboard from "./pages/instructor/InstructorDashboard";
-//admin
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import ModuleManager from "./pages/instructor/ModuleManager";
-// Student Pages & Layout
 import ChatMessage from "@/pages/student/ChatMessage";
 import Achievements from "@/pages/student/Achievements";
-import CourseDetail from '@/pages/student/CourseDetail';
+import CourseDetail from "@/pages/student/CourseDetail";
+
+// Instructor Pages & Layout
+import InstructorLayout from "@/layouts/InstructorLayout";
+import InstructorDashboard from "@/pages/instructor/InstructorDashboard";
+import InstructorProfile from "@/pages/instructor/Profile";
+import ModuleManager from "@/pages/instructor/ModuleManager";
 
 // Staff Pages & Layout
 import StaffLayout from "@/layouts/StaffLayout";
@@ -43,11 +42,9 @@ import StaffReports from "@/pages/staff/StaffReports";
 import StaffDiscussions from "@/pages/staff/StaffDiscussions";
 
 // Admin Pages & Layout
-// ✅ FIX 1: Import đúng file AdminLayout (đã tạo ở bước trước)
 import AdminLayout from "@/layouts/AdminLayout";
-import UserManagement from "./pages/admin/UserManagement";
-import InstructorLayout from "./layouts/InstructorLayout";
-import InstructorProfile from "./pages/instructor/Profile";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import UserManagement from "@/pages/admin/UserManagement";
 
 // Fallback
 const NotFound = () => (
@@ -90,6 +87,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Payment Result (Thường là public hoặc cần login nhưng không cần layout) */}
+            <Route path="/payment-result" element={<PaymentResult />} />
 
             {/* ================= STUDENT ROUTES ================= */}
             <Route
@@ -106,15 +106,10 @@ function App() {
               <Route path="profile" element={<StudentProfile />} />
               <Route path="chat" element={<ChatMessage />} />
               <Route path="achievements" element={<Achievements />} />
-
               <Route path="course/:id" element={<CourseDetail />} />
-
-
-
-
             </Route>
 
-            {/* Learning Space (Full screen) */}
+            {/* Learning Space (Full screen - Không dùng Layout) */}
             <Route
               path="/student/learning/:courseId"
               element={
@@ -133,9 +128,12 @@ function App() {
                 </ProtectedRoute>
               }
             >
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<InstructorDashboard />} />
               <Route path="profile" element={<InstructorProfile />} />
             </Route>
+
+            {/* Module Manager (Full screen cho instructor - Không dùng Layout) */}
             <Route
               path="/instructor/module/:moduleId"
               element={
@@ -144,7 +142,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* ADMIN */}
+
+            {/* ================= STAFF ROUTES ================= */}
             <Route
               path="/staff"
               element={
@@ -160,30 +159,22 @@ function App() {
               <Route path="reports" element={<StaffReports />} />
             </Route>
 
-            {/* ================= ADMIN ROUTES (ĐÃ SỬA) ================= */}
-            {/* ✅ FIX 2: Dùng Nested Route để AdminLayout bao bọc các trang con */}
+            {/* ================= ADMIN ROUTES ================= */}
             <Route
               path="/admin"
               element={
                 <ProtectedRoute allowRoles={["ADMIN"]}>
-                  <AdminLayout /> {/* Layout nằm ở đây, chứa <Outlet /> */}
+                  <AdminLayout />
                 </ProtectedRoute>
               }
             >
-              {/* Nếu vào /admin thì tự nhảy sang dashboard */}
               <Route index element={<Navigate to="dashboard" replace />} />
-
-              {/* Các trang con sẽ hiện vào vị trí <Outlet /> trong AdminLayout */}
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
-
-              {/* Sau này thêm route courses ở đây */}
               {/* <Route path="courses" element={<CourseManagement />} /> */}
             </Route>
-            <Route path="/payment-result" element={<PaymentResult />} />
+
             {/* ================= CATCH ALL ================= */}
-
-
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

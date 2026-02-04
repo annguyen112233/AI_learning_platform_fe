@@ -218,7 +218,7 @@ export default function InstructorDashboard() {
         )}
 
       {/* ================= STEP 2: AI QUIZ ================= */}
-      <div className="space-y-6">
+      {/* <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -259,7 +259,7 @@ export default function InstructorDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* ================= STEP 3: REVENUE DETAIL ================= */}
       <div className="space-y-6">

@@ -16,10 +16,16 @@ import {
   Settings,
   Users,
   X,
+  Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { getModulesByCourse } from "../../services/moduleService";
-import { getLessonsByModule } from "../../services/lessonService";
+import {
+  getLessonsByModule,
+  generateQuizForLesson,
+} from "../../services/lessonService";
 import CreateLessonByUpload from "./CreateLesson";
+import QuizDisplay from "./QuizDisplay"; // ✅ Import QuizDisplay
 
 // --- COMPONENT: MODULE CARD (Similar to LessonCard from CoursePlayer) ---
 const ModuleCard = ({ module, isActive, onClick }) => {
@@ -141,6 +147,10 @@ export default function ModuleManager() {
   const [loadingLessons, setLoadingLessons] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
+  // ✅ State cho Generate Quiz
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState("");
+
   /* ================= FETCH MODULES ================= */
   const fetchModules = async () => {
     if (!courseId) return;
@@ -168,6 +178,32 @@ export default function ModuleManager() {
       console.error("Fetch lessons failed", err);
     } finally {
       setLoadingLessons(false);
+    }
+  };
+
+  /* ================= GENERATE QUIZ ================= */
+  const handleGenerateQuiz = async () => {
+    if (!selectedLesson?.lessonId) {
+      setQuizError("Vui lòng chọn lesson trước");
+      return;
+    }
+
+    try {
+      setGeneratingQuiz(true);
+      setQuizError("");
+
+      await generateQuizForLesson(selectedLesson.lessonId);
+
+      alert("✅ Quiz đang được tạo tự động bằng AI. Vui lòng đợi vài phút!");
+
+      // Refresh lesson data để cập nhật quiz status
+      await fetchLessons(selectedModule?.moduleId || selectedModule?.id);
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || "Tạo quiz thất bại";
+      setQuizError(errorMsg);
+      console.error("Generate quiz failed:", err);
+    } finally {
+      setGeneratingQuiz(false);
     }
   };
 
@@ -265,16 +301,52 @@ export default function ModuleManager() {
                           </h3>
                         </div>
                       </div>
-                      {selectedLesson.duration && (
-                        <div className="flex items-center gap-2 text-slate-600 bg-white px-3 py-2 rounded-lg shadow-sm">
-                          <Clock size={16} />
-                          <span className="font-semibold">
-                            {selectedLesson.duration}s
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {selectedLesson.duration && (
+                          <div className="flex items-center gap-2 text-slate-600 bg-white px-3 py-2 rounded-lg shadow-sm">
+                            <Clock size={16} />
+                            <span className="font-semibold">
+                              {selectedLesson.duration}s
+                            </span>
+                          </div>
+                        )}
+
+                        {/* ✅ Generate Quiz Button */}
+                        <button
+                          onClick={handleGenerateQuiz}
+                          disabled={generatingQuiz}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {generatingQuiz ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                              Đang tạo...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={16} />
+                              Tạo Quiz AI
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
+
+                  {/* ✅ Quiz Error Message */}
+                  {quizError && (
+                    <div className="mx-6 mt-4">
+                      <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
+                        <AlertCircle
+                          size={18}
+                          className="text-red-600 mt-0.5 shrink-0"
+                        />
+                        <p className="text-sm text-red-700 font-medium leading-relaxed">
+                          {quizError}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* LESSON CONTENT */}
                   <div className="p-6 space-y-6">
@@ -328,6 +400,48 @@ export default function ModuleManager() {
                         </div>
                       </div>
                     )}
+
+                    {/* ✅ Quiz Status Info */}
+                    {selectedLesson.quizStatus && (
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                          <Sparkles size={16} className="text-purple-600" />
+                          Trạng thái Quiz
+                        </h4>
+                        <div
+                          className={`p-4 rounded-xl border ${
+                            selectedLesson.quizStatus === "COMPLETED"
+                              ? "bg-green-50 border-green-200"
+                              : selectedLesson.quizStatus === "PROCESSING"
+                                ? "bg-yellow-50 border-yellow-200"
+                                : "bg-slate-50 border-slate-200"
+                          }`}
+                        >
+                          <p
+                            className={`text-sm font-semibold ${
+                              selectedLesson.quizStatus === "COMPLETED"
+                                ? "text-green-700"
+                                : selectedLesson.quizStatus === "PROCESSING"
+                                  ? "text-yellow-700"
+                                  : "text-slate-700"
+                            }`}
+                          >
+                            {selectedLesson.quizStatus === "COMPLETED" &&
+                              "✅ Quiz đã được tạo"}
+                            {selectedLesson.quizStatus === "PROCESSING" &&
+                              "⏳ Quiz đang được xử lý..."}
+                            {selectedLesson.quizStatus === "PENDING" &&
+                              "⏸️ Chưa tạo quiz"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ✅ QUIZ DISPLAY - Hiển thị Quiz khi đã được tạo */}
+                    <QuizDisplay
+                      lessonId={selectedLesson.lessonId}
+                      quizStatus={selectedLesson.quizStatus}
+                    />
                   </div>
                 </div>
               </div>
@@ -416,6 +530,7 @@ export default function ModuleManager() {
                           setSelectedModule(module);
                           fetchLessons(moduleId);
                           setShowCreateForm(false);
+                          setQuizError(""); // Clear quiz error when switching modules
                         }}
                       />
                       {/* Add Lesson Button - shows below selected module */}
@@ -446,7 +561,10 @@ export default function ModuleManager() {
                                       selectedLesson?.lessonId ===
                                       lesson.lessonId
                                     }
-                                    onClick={setSelectedLesson}
+                                    onClick={(lesson) => {
+                                      setSelectedLesson(lesson);
+                                      setQuizError(""); // Clear quiz error when switching lessons
+                                    }}
                                   />
                                 ))}
                               </div>

@@ -17,3 +17,7 @@ export const createPaymentVnpay = (subscriptionPlan, amount, orderInfo,courseId 
         courseId
     });
 }
+
+export const getMyPayments = () => {
+  return api.get("/identity/payment/my-payments");
+};
