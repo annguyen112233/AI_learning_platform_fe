@@ -3,14 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Clock, BookOpen, Star, User, ArrowLeft,
     PlayCircle, Share2, Heart, AlertTriangle, Calendar, Info,
-    ChevronDown, ChevronUp, FileText, Lock // <--- Thêm icon mới
+    ChevronDown, ChevronUp, FileText, Lock, CreditCard, CheckCircle // <--- Thêm icon mới
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-
 
 // Import service
 import { getCourseById } from '@/services/courseService';
 import { enrollCourse } from '@/services/enrollmentService';
+import { createPaymentVnpay, createPaymentMomo } from '@/services/paymentService';
 
 const formatDuration = (seconds) => {
     if (!seconds) return "00:00";
@@ -19,14 +19,12 @@ const formatDuration = (seconds) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
 };
 
-// --- 1. COMPONENT CON: Hiển thị từng Chương (Module) ---
-// (Bạn có thể tách ra file riêng tên CourseModule.jsx sau này nếu muốn gọn code)
+// --- COMPONENT CON: Hiển thị từng Chương (Giữ nguyên) ---
 const CourseModule = ({ module, index, defaultOpen = false }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
         <div className="border-b border-slate-200 last:border-0">
-            {/* Header của Module - Click để đóng mở */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
@@ -42,7 +40,6 @@ const CourseModule = ({ module, index, defaultOpen = false }) => {
                 </span>
             </button>
 
-            {/* Danh sách bài học (Lesson) - Chỉ hiện khi isOpen = true */}
             {isOpen && (
                 <div className="bg-white">
                     {module.lessons?.map((lesson, lessonIdx) => (
@@ -51,19 +48,15 @@ const CourseModule = ({ module, index, defaultOpen = false }) => {
                             className="flex items-center justify-between p-4 border-b border-slate-50 hover:bg-emerald-50/30 transition-colors group cursor-pointer"
                         >
                             <div className="flex items-center gap-3">
-                                {/* Icon tùy loại bài học (Video hoặc Tài liệu) */}
                                 {lesson.type === 'doc' ? (
                                     <FileText size={18} className="text-slate-400 group-hover:text-emerald-600" />
                                 ) : (
                                     <PlayCircle size={18} className="text-slate-400 group-hover:text-emerald-600" />
                                 )}
-
                                 <span className="text-slate-600 text-sm font-medium group-hover:text-slate-900">
                                     {lesson.title}
                                 </span>
                             </div>
-
-                            {/* Thời lượng hoặc Trạng thái khóa */}
                             <div className="flex items-center gap-3">
                                 {lesson.isPreview ? (
                                     <span className="text-[10px] text-emerald-600 font-bold border border-emerald-200 px-2 py-0.5 rounded bg-emerald-50 uppercase tracking-wide">
@@ -78,8 +71,6 @@ const CourseModule = ({ module, index, defaultOpen = false }) => {
                             </div>
                         </div>
                     ))}
-
-                    {/* Trường hợp chương trống */}
                     {(!module.lessons || module.lessons.length === 0) && (
                         <div className="p-4 text-xs text-slate-400 italic pl-11">
                             Nội dung chương này đang được cập nhật...
@@ -100,41 +91,35 @@ export default function CourseDetail() {
     const [loading, setLoading] = useState(true);
     const [enrolling, setEnrolling] = useState(false);
 
+    // --- STATE CHO MODAL THANH TOÁN ---
+    const [showEnrollModal, setShowEnrollModal] = useState(false);
+    const [enrollStep, setEnrollStep] = useState(1); // 1: Chọn loại, 2: Chọn thanh toán
+    const [paymentMethod, setPaymentMethod] = useState('VNPAY'); // 'MOMO' | 'VNPAY'
+
     useEffect(() => {
         const fetchDetail = async () => {
             try {
                 const response = await getCourseById(id);
                 const apiData = response.data.data || {};
-
-                // --- XỬ LÝ DỮ LIỆU TỪ BACKEND ---
                 const rawModules = apiData.modules || [];
 
-                // Map dữ liệu từ Backend sang cấu trúc Frontend cần
                 const mappedModules = rawModules.map(mod => ({
-                    id: mod.moduleId,       // Backend trả về moduleId
+                    id: mod.moduleId,
                     title: mod.title,
                     lessons: (mod.lessons || []).map(les => ({
-                        id: les.lessonId,     // Backend trả về lessonId
+                        id: les.lessonId,
                         title: les.title,
-                        // Xử lý thời lượng:
                         duration: formatDuration(les.duration),
-                        // Xử lý loại bài học: Có videoUrl là 'video', không thì là 'doc'
                         type: les.videoUrl ? 'video' : 'doc',
-                        // Backend chưa có trường isPreview, tạm thời để false (hoặc true cho bài đầu tiên)
                         isPreview: false
                     }))
                 }));
 
-                // Tính tổng số bài học thật
                 const totalLessons = mappedModules.reduce((acc, m) => acc + m.lessons.length, 0);
-
-                // Tính tổng thời lượng (Format lại tổng giây thành giờ phút nếu muốn)
-                // Hiện tại Backend chưa trả về tổng duration của cả khóa, ta lấy tạm string 'Đang cập nhật' hoặc tính tổng
                 const totalDurationSeconds = rawModules.reduce((acc, m) =>
                     acc + (m.lessons || []).reduce((sum, l) => sum + (l.duration || 0), 0)
                     , 0);
 
-                // Hàm phụ để format tổng thời gian (VD: 4500s -> 1h 15p)
                 const formatTotalDuration = (secs) => {
                     if (!secs) return "Chưa cập nhật";
                     const h = Math.floor(secs / 3600);
@@ -153,15 +138,10 @@ export default function CourseDetail() {
                     instructor: apiData.constructorName || "Unknown Instructor",
                     rejectionReason: apiData.rejectionReason,
                     createdAt: apiData.createdAt,
-
-                    // --- GÁN DỮ LIỆU THẬT ---
                     modules: mappedModules,
-
                     rating: 0,
                     reviews: 0,
-                    students: apiData.students || 0, // Backend chưa trả field này thì mặc định 0
-
-                    // Sử dụng thời gian thực tính toán được
+                    students: apiData.students || 0,
                     duration: formatTotalDuration(totalDurationSeconds),
                     lectures: totalLessons
                 };
@@ -177,23 +157,83 @@ export default function CourseDetail() {
         fetchDetail();
     }, [id]);
 
-    const handleEnroll = async () => {
-        setEnrolling(true);
-        try {
-            await enrollCourse(id);
-
-            toast.success("Đăng ký thành công! Đang chuyển vào lớp học...");
-
-            setTimeout(() => {
-                navigate(`/student/learning/${id}`);
-            }, 800);
-
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Đăng ký thất bại, vui lòng thử lại");
-            setEnrolling(false);
+    // --- XỬ LÝ KHI NGƯỜI DÙNG CHỌN LOẠI ĐĂNG KÝ ---
+    const handleSelectEnrollType = (type) => {
+        if (type === 'SUBSCRIPTION') {
+            // Trường hợp 1: Dùng gói học -> Chuyển trang Upgrade
+            setShowEnrollModal(false);
+            navigate('/student/profile?tab=upgrade');
+        } else if (type === 'SINGLE_PURCHASE') {
+            // Trường hợp 2: Mua lẻ -> Chuyển sang bước chọn thanh toán
+            setEnrollStep(2);
         }
     };
 
+    // --- XỬ LÝ THANH TOÁN (MUA LẺ) ---
+    const handlePayment = async () => {
+        // 1. Kiểm tra đầu vào
+        if (!paymentMethod) {
+            toast.error("Vui lòng chọn phương thức thanh toán");
+            return;
+        }
+
+        setEnrolling(true);
+
+        try {
+            let response;
+            
+            // Chuẩn bị 3 tham số theo đúng thứ tự hàm service yêu cầu
+            // Tham số 1: Ở đây là ID khóa học (tương ứng vị trí subscriptionPlan)
+            const subscriptionPlan = "COURSE"; 
+            // Tham số 2: Giá tiền
+            const amount = course.price;
+            const courseId = course.id
+            
+            // Tham số 3: Nội dung thanh toán
+            // Lưu ý: Nội dung nên viết không dấu để tránh lỗi ở cổng thanh toán
+            const orderInfo = `Thanh toan khoa hoc ${course.title}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            // 2. Gọi API tương ứng với 3 tham số
+            if (paymentMethod === 'VNPAY') {
+                // Gọi API VNPAY (truyền 3 tham số rời)
+                response = await createPaymentVnpay(subscriptionPlan, amount, orderInfo,courseId);
+            } else if (paymentMethod === 'MOMO') {
+                // Gọi API MOMO (truyền 3 tham số rời)
+                response = await createPaymentMomo(subscriptionPlan, amount, orderInfo,courseId);
+            } 
+
+            // 3. Trích xuất Link thanh toán
+            const payUrl =
+                response?.data?.payUrl ||
+                response?.data?.paymentUrl ||
+                response?.data?.data?.payUrl ||
+                response?.payUrl;
+
+            // 4. Validate Link
+            if (!payUrl) {
+                console.error("Lỗi: Không lấy được link thanh toán", response);
+                toast.error("Hệ thống không trả về link thanh toán. Vui lòng thử lại!");
+                setEnrolling(false);
+                return;
+            }
+
+            // 5. Redirect sang cổng thanh toán
+            toast.success(`Đang chuyển sang cổng thanh toán ${paymentMethod}...`);
+            window.location.href = payUrl;
+
+        } catch (error) {
+            console.error("Payment Error:", error);
+            const errorMessage = error.response?.data?.message || "Khởi tạo thanh toán thất bại";
+            toast.error(errorMessage);
+            setEnrolling(false);
+        }
+    };
+    
+    // Reset modal khi đóng
+    const closeEnrollModal = () => {
+        setShowEnrollModal(false);
+        setEnrollStep(1);
+    };
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -212,7 +252,6 @@ export default function CourseDetail() {
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] font-sans pb-20 text-slate-600">
-
             <div className="bg-white border-b border-slate-200 px-6 h-16 flex items-center justify-between">
                 <button
                     onClick={() => navigate(-1)}
@@ -220,8 +259,6 @@ export default function CourseDetail() {
                 >
                     <ArrowLeft size={20} /> Quay lại
                 </button>
-
-                {/* Hiển thị trạng thái Draft nếu có */}
                 {course.status === 'DRAFT' && (
                     <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">
                         <AlertTriangle size={14} /> BẢN NHÁP
@@ -229,7 +266,7 @@ export default function CourseDetail() {
                 )}
             </div>
 
-            {/* Cảnh báo từ chối */}
+            {/* Error / Rejection Alert */}
             {course.rejectionReason && (
                 <div className="max-w-7xl mx-auto px-6 mt-6">
                     <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3">
@@ -243,10 +280,8 @@ export default function CourseDetail() {
             )}
 
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-10 mt-8">
-
-                {/* === LEFT COLUMN: MAIN INFO === */}
+                {/* === LEFT COLUMN === */}
                 <div className="lg:col-span-2 space-y-8">
-
                     <div>
                         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight mb-4">
                             {course.title}
@@ -256,7 +291,6 @@ export default function CourseDetail() {
                         </p>
                     </div>
 
-                    {/* Instructor Info */}
                     <div className="flex flex-wrap items-center gap-6 pb-6 border-b border-slate-200">
                         <div className="flex items-center gap-3">
                             <img
@@ -276,9 +310,8 @@ export default function CourseDetail() {
                         </div>
                     </div>
 
-                    {/* --- 3. KHU VỰC HIỂN THỊ NỘI DUNG KHÓA HỌC (ĐÃ THAY THẾ PLACEHOLDER) --- */}
+                    {/* Course Content */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        {/* Header của danh sách */}
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900">Nội dung khóa học</h3>
@@ -291,7 +324,6 @@ export default function CourseDetail() {
                             </button>
                         </div>
 
-                        {/* Render từng Module */}
                         <div>
                             {course.modules && course.modules.length > 0 ? (
                                 course.modules.map((module, index) => (
@@ -299,7 +331,7 @@ export default function CourseDetail() {
                                         key={module.id || index}
                                         module={module}
                                         index={index}
-                                        defaultOpen={index === 0} // Mặc định mở chương đầu tiên
+                                        defaultOpen={index === 0}
                                     />
                                 ))
                             ) : (
@@ -312,14 +344,11 @@ export default function CourseDetail() {
                             )}
                         </div>
                     </div>
-
                 </div>
 
                 {/* === RIGHT COLUMN: STICKY CARD === */}
                 <div className="relative">
                     <div className="sticky top-24 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 overflow-hidden">
-
-                        {/* Thumbnail */}
                         <div className="relative aspect-video bg-slate-200">
                             <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
@@ -330,7 +359,6 @@ export default function CourseDetail() {
                         </div>
 
                         <div className="p-6 space-y-6">
-                            {/* Price */}
                             <div>
                                 <p className="text-sm text-slate-500 font-medium mb-1">Học phí</p>
                                 <div className="flex items-center gap-2">
@@ -341,23 +369,18 @@ export default function CourseDetail() {
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="space-y-3">
                                 <button
-                                    onClick={handleEnroll}
-                                    disabled={enrolling} // ❌ bỏ check DRAFT
+                                    onClick={() => setShowEnrollModal(true)}
                                     className="w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2
-      bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200
-      disabled:bg-slate-400 disabled:cursor-not-allowed
-    "
+                                        bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200"
                                 >
-                                    {enrolling ? "Đang xử lý..." : "Đăng ký ngay"}
+                                    Đăng ký ngay
                                 </button>
 
-                                {/* ⚠️ Chỉ hiển thị cảnh báo nếu là DRAFT */}
                                 {course.status === 'DRAFT' && (
                                     <p className="text-xs text-amber-600 text-center">
-                                        ⚠ Khóa học đang trong giai đoạn hoàn thiện, nội dung có thể thay đổi
+                                        ⚠ Khóa học đang trong giai đoạn hoàn thiện
                                     </p>
                                 )}
 
@@ -371,8 +394,134 @@ export default function CourseDetail() {
                                 </div>
                             </div>
 
+                            {/* --- MODAL ĐĂNG KÝ MỚI --- */}
+                            {showEnrollModal && (
+                                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-all">
+                                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl transform transition-all scale-100">
 
-                            {/* Features (Đã dùng số liệu từ Mock Data) */}
+                                        {/* HEADER MODAL */}
+                                        <div className="flex items-center justify-between mb-5">
+                                            <h3 className="text-xl font-bold text-slate-900">
+                                                {enrollStep === 1 ? 'Chọn cách đăng ký' : 'Thanh toán khóa học'}
+                                            </h3>
+                                            {enrollStep === 2 && (
+                                                <button onClick={() => setEnrollStep(1)} className="text-sm text-slate-500 hover:text-emerald-600 font-medium">
+                                                    Quay lại
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* NỘI DUNG BƯỚC 1: CHỌN LOẠI */}
+                                        {enrollStep === 1 && (
+                                            <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <button
+                                                    onClick={() => handleSelectEnrollType("SUBSCRIPTION")}
+                                                    className="w-full border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-left transition group"
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <p className="font-bold text-slate-800 group-hover:text-emerald-700">🎯 Dùng gói học</p>
+                                                        <ArrowLeft className="rotate-180 text-slate-300 group-hover:text-emerald-500" size={18} />
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        Nâng cấp gói thành viên để học không giới hạn
+                                                    </p>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleSelectEnrollType("SINGLE_PURCHASE")}
+                                                    className="w-full border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-left transition group"
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <p className="font-bold text-slate-800 group-hover:text-emerald-700">💳 Mua lẻ khóa học</p>
+                                                        <ArrowLeft className="rotate-180 text-slate-300 group-hover:text-emerald-500" size={18} />
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        Thanh toán một lần duy nhất cho khóa học này
+                                                    </p>
+                                                </button>
+
+                                                <button
+                                                    onClick={closeEnrollModal}
+                                                    className="w-full py-3 rounded-xl border border-slate-200 font-semibold text-slate-600 hover:bg-slate-50 mt-2"
+                                                >
+                                                    Đóng
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* NỘI DUNG BƯỚC 2: CHỌN CỔNG THANH TOÁN */}
+                                        {enrollStep === 2 && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4">
+                                                    <div className="flex justify-between text-sm mb-1">
+                                                        <span className="text-slate-500">Khóa học:</span>
+                                                        <span className="font-bold text-slate-700 truncate w-40 text-right">{course.title}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-slate-500">Số tiền:</span>
+                                                        <span className="font-bold text-emerald-600 text-lg">
+                                                            {course.price.toLocaleString('vi-VN')} đ
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-sm font-medium text-slate-700">Chọn phương thức thanh toán:</p>
+
+                                                <div className="space-y-3">
+                                                    {/* VNPAY OPTION */}
+                                                    <div
+                                                        onClick={() => setPaymentMethod('VNPAY')}
+                                                        className={`relative flex items-center p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'VNPAY' ? 'border-emerald-500 bg-emerald-50/50 ring-1 ring-emerald-500' : 'border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                    >
+                                                        <div className="w-10 h-10 bg-white rounded border border-slate-200 flex items-center justify-center overflow-hidden">
+                                                            <span className="text-[10px] font-bold text-blue-600">VNPAY</span>
+                                                        </div>
+                                                        <div className="ml-3 flex-1">
+                                                            <p className="text-sm font-bold text-slate-800">Ví VNPAY</p>
+                                                            <p className="text-xs text-slate-500">Quét mã QR qua ứng dụng ngân hàng</p>
+                                                        </div>
+                                                        {paymentMethod === 'VNPAY' && <CheckCircle size={20} className="text-emerald-600" />}
+                                                    </div>
+
+                                                    {/* MOMO OPTION */}
+                                                    <div
+                                                        onClick={() => setPaymentMethod('MOMO')}
+                                                        className={`relative flex items-center p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'MOMO' ? 'border-pink-500 bg-pink-50/50 ring-1 ring-pink-500' : 'border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                    >
+                                                        <div className="w-10 h-10 bg-[#A50064] rounded border border-transparent flex items-center justify-center overflow-hidden">
+                                                            <span className="text-[10px] font-bold text-white">MoMo</span>
+                                                        </div>
+                                                        <div className="ml-3 flex-1">
+                                                            <p className="text-sm font-bold text-slate-800">Ví MoMo</p>
+                                                            <p className="text-xs text-slate-500">Thanh toán qua ví điện tử MoMo</p>
+                                                        </div>
+                                                        {paymentMethod === 'MOMO' && <CheckCircle size={20} className="text-pink-600" />}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    disabled={enrolling}
+                                                    onClick={handlePayment}
+                                                    className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 disabled:bg-slate-400 mt-4 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                                                >
+                                                    {enrolling ? (
+                                                        <>Processing...</>
+                                                    ) : (
+                                                        <>
+                                                            <CreditCard size={18} />
+                                                            Thanh toán ngay
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Features */}
                             <div className="space-y-3 pt-4 border-t border-slate-100 text-sm text-slate-600">
                                 <div className="flex justify-between">
                                     <span className="flex items-center gap-2"><Clock size={16} className="text-slate-400" /> Thời lượng</span>

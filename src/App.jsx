@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 
 // Context & Auth
 import { AuthProvider } from "@/context/AuthContext";
+import { SubscriptionProvider } from "@/context/SubscriptionContext"
 import ProtectedRoute from "@/routes/ProtectedRoute";
 
 // Public Pages
@@ -58,133 +59,135 @@ const NotFound = () => (
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        {/* ✅ TOASTER GLOBAL CONFIGURATION */}
-        <Toaster
-          position="top-right"
-          reverseOrder={false}
-          toastOptions={{
-            duration: 3000,
-            style: {
-              borderRadius: "14px",
-              background: "#0f172a",
-              color: "#fff",
-              fontWeight: "600",
-              padding: "12px 16px",
-            },
-            success: {
-              iconTheme: { primary: "#22c55e", secondary: "#ecfdf5" },
-            },
-            error: {
-              iconTheme: { primary: "#ef4444", secondary: "#fef2f2" },
-            },
-          }}
-        />
-
-        <Routes>
-          {/* ================= PUBLIC ROUTES ================= */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-
-          {/* ================= STUDENT ROUTES ================= */}
-          <Route
-            path="/student"
-            element={
-              <ProtectedRoute allowRoles={["STUDENT"]}>
-                <StudentLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<StudentDashboard />} />
-            <Route path="courses" element={<MyCourses />} />
-            <Route path="profile" element={<StudentProfile />} />
-            <Route path="chat" element={<ChatMessage />} />
-            <Route path="achievements" element={<Achievements />} />
-
-            <Route path="course/:id" element={<CourseDetail />} />
-
-
-
-
-          </Route>
-
-          {/* Learning Space (Full screen) */}
-          <Route
-            path="/student/learning/:courseId"
-            element={
-              <ProtectedRoute allowRoles={["STUDENT"]}>
-                <CoursePlayer />
-              </ProtectedRoute>
-            }
+      <SubscriptionProvider>
+        <Router>
+          {/* ✅ TOASTER GLOBAL CONFIGURATION */}
+          <Toaster
+            position="top-right"
+            reverseOrder={false}
+            toastOptions={{
+              duration: 3000,
+              style: {
+                borderRadius: "14px",
+                background: "#0f172a",
+                color: "#fff",
+                fontWeight: "600",
+                padding: "12px 16px",
+              },
+              success: {
+                iconTheme: { primary: "#22c55e", secondary: "#ecfdf5" },
+              },
+              error: {
+                iconTheme: { primary: "#ef4444", secondary: "#fef2f2" },
+              },
+            }}
           />
 
-          {/* ================= INSTRUCTOR ROUTES ================= */}
-          <Route
-            path="/instructor"
-            element={
-              <ProtectedRoute allowRoles={["INSTRUCTOR"]}>
-                <InstructorLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="dashboard" element={<InstructorDashboard />} />
-            <Route path="profile" element={<InstructorProfile />} />
-          </Route>
-          <Route
-            path="/instructor/module/:moduleId"
-            element={
-              <ProtectedRoute allowRoles={["INSTRUCTOR"]}>
-                <ModuleManager />
-              </ProtectedRoute>
-            }
-          />
-          {/* ADMIN */}
-          <Route
-            path="/staff"
-            element={
-              <ProtectedRoute allowRoles={["STAFF"]}>
-                <StaffLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<StaffDashboard />} />
-            <Route path="moderation" element={<StaffModeration />} />
-            <Route path="discussions" element={<StaffDiscussions />} />
-            <Route path="reports" element={<StaffReports />} />
-          </Route>
+          <Routes>
+            {/* ================= PUBLIC ROUTES ================= */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* ================= ADMIN ROUTES (ĐÃ SỬA) ================= */}
-          {/* ✅ FIX 2: Dùng Nested Route để AdminLayout bao bọc các trang con */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowRoles={["ADMIN"]}>
-                <AdminLayout /> {/* Layout nằm ở đây, chứa <Outlet /> */}
-              </ProtectedRoute>
-            }
-          >
-            {/* Nếu vào /admin thì tự nhảy sang dashboard */}
-            <Route index element={<Navigate to="dashboard" replace />} />
+            {/* ================= STUDENT ROUTES ================= */}
+            <Route
+              path="/student"
+              element={
+                <ProtectedRoute allowRoles={["STUDENT"]}>
+                  <StudentLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<StudentDashboard />} />
+              <Route path="courses" element={<MyCourses />} />
+              <Route path="profile" element={<StudentProfile />} />
+              <Route path="chat" element={<ChatMessage />} />
+              <Route path="achievements" element={<Achievements />} />
 
-            {/* Các trang con sẽ hiện vào vị trí <Outlet /> trong AdminLayout */}
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="users" element={<UserManagement />} />
-
-            {/* Sau này thêm route courses ở đây */}
-            {/* <Route path="courses" element={<CourseManagement />} /> */}
-          </Route>
-          <Route path="/payment-result" element={<PaymentResult />} />
-          {/* ================= CATCH ALL ================= */}
+              <Route path="course/:id" element={<CourseDetail />} />
 
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+
+
+            </Route>
+
+            {/* Learning Space (Full screen) */}
+            <Route
+              path="/student/learning/:courseId"
+              element={
+                <ProtectedRoute allowRoles={["STUDENT"]}>
+                  <CoursePlayer />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ================= INSTRUCTOR ROUTES ================= */}
+            <Route
+              path="/instructor"
+              element={
+                <ProtectedRoute allowRoles={["INSTRUCTOR"]}>
+                  <InstructorLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="dashboard" element={<InstructorDashboard />} />
+              <Route path="profile" element={<InstructorProfile />} />
+            </Route>
+            <Route
+              path="/instructor/module/:moduleId"
+              element={
+                <ProtectedRoute allowRoles={["INSTRUCTOR"]}>
+                  <ModuleManager />
+                </ProtectedRoute>
+              }
+            />
+            {/* ADMIN */}
+            <Route
+              path="/staff"
+              element={
+                <ProtectedRoute allowRoles={["STAFF"]}>
+                  <StaffLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<StaffDashboard />} />
+              <Route path="moderation" element={<StaffModeration />} />
+              <Route path="discussions" element={<StaffDiscussions />} />
+              <Route path="reports" element={<StaffReports />} />
+            </Route>
+
+            {/* ================= ADMIN ROUTES (ĐÃ SỬA) ================= */}
+            {/* ✅ FIX 2: Dùng Nested Route để AdminLayout bao bọc các trang con */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowRoles={["ADMIN"]}>
+                  <AdminLayout /> {/* Layout nằm ở đây, chứa <Outlet /> */}
+                </ProtectedRoute>
+              }
+            >
+              {/* Nếu vào /admin thì tự nhảy sang dashboard */}
+              <Route index element={<Navigate to="dashboard" replace />} />
+
+              {/* Các trang con sẽ hiện vào vị trí <Outlet /> trong AdminLayout */}
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<UserManagement />} />
+
+              {/* Sau này thêm route courses ở đây */}
+              {/* <Route path="courses" element={<CourseManagement />} /> */}
+            </Route>
+            <Route path="/payment-result" element={<PaymentResult />} />
+            {/* ================= CATCH ALL ================= */}
+
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

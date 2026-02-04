@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { logout } from "@/services/authService"
 
 import {
@@ -17,7 +18,8 @@ import {
 export default function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, setUser } = useAuth(); // 👈 THÊM DÒNG NÀY
+  const { user, setUser } = useAuth();
+  const { subscription } = useSubscription();
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Tổng quan", path: "/student/dashboard" },
@@ -175,10 +177,29 @@ export default function StudentLayout() {
                     {user?.fullName || "Học viên"}
                   </p>
 
-                  <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
-                    {user?.level || "N5"}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {/* Level */}
+                    <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                      {user?.level || "Newbie"}
+                    </p>
+
+                    {/* Subscription */}
+                    {subscription?.active === "ACTIVE" && (
+                      <p
+                        className={`
+      text-[10px] uppercase font-bold px-1.5 py-0.5 rounded
+      ${subscription.plan === "PREMIUM" ? "bg-amber-100 text-amber-700" : ""}
+      ${subscription.plan === "ENTERPRISE" ? "bg-purple-100 text-purple-700" : ""}
+      ${subscription.plan === "BASIC" ? "bg-slate-100 text-slate-600" : ""}
+    `}
+                      >
+                        {subscription.plan}
+                      </p>
+                    )}
+
+                  </div>
                 </div>
+
 
               </div>
 

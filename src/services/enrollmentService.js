@@ -1,5 +1,5 @@
 import api from './api';
 
-export const enrollCourse = (courseId) => {
-  return api.post(`/enrollments`, { courseId });
-}
+export const enrollCourse = (payload) => {
+  return api.post(`/enrollments`, payload);
+};

@@ -8,8 +8,11 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { uploadAvatar, getProfile, updateProfile, changePassword } from '@/services/userService';
 import { createPaymentVnpay, createPaymentMomo } from '@/services/paymentService';
+import { getSubscriptionStudent } from '@/services/subscriptionService';
+
 import { toast } from 'react-hot-toast';
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { formatDateVN } from "@/utils/helpers";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
@@ -39,7 +42,7 @@ const PLANS = [
     ],
     aiFeatures: [],
     color: 'border-slate-200 bg-white',
-    btnColor: 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+    btnColor: 'bg-purple-600 text-white hover:bg-purple-700 shadow-purple-200',
     icon: User
   },
   {
@@ -95,10 +98,28 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const { setUser } = useAuth();
+  const { setSubscriptionStudent } = useSubscription();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [subscription, setSubscription] = useState(null);
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const res = await getSubscriptionStudent();
+        setSubscription(res.data.data);
+        setSubscriptionStudent(res.data.data)
+      } catch (e) {
+        console.error("Không lấy được subscription", e);
+      }
+    };
+
+    fetchSubscription();
+  }, []);
+
 
 
   const fileInputRef = useRef(null);
@@ -407,8 +428,11 @@ export default function StudentProfile() {
               </div>
               <div className="text-center border-l border-slate-100">
                 <div className="text-xs text-slate-400 font-medium uppercase mb-1">Gói hiện tại</div>
-                <div className="text-sm font-bold text-slate-700">Miễn phí</div>
-              </div>
+                <div className="text-sm font-bold text-slate-700">
+                  {subscription?.plan === "PREMIUM" && "Cao cấp"}
+                  {subscription?.plan === "ENTERPRISE" && "Siêu cấp"}
+                  {!subscription && "Miễn phí"}
+                </div>              </div>
             </div>
           </div>
 
@@ -597,80 +621,116 @@ export default function StudentProfile() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-start">
-                  {PLANS.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className={`relative rounded-2xl p-6 border-2 flex flex-col h-full transition-all hover:shadow-xl ${plan.color} ${plan.recommended ? 'scale-105 shadow-lg z-10' : 'hover:-translate-y-1'}`}
-                    >
-                      {plan.recommended && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md uppercase tracking-wider">
-                          Khuyên dùng
-                        </div>
-                      )}
+                  {PLANS.map((plan) => {
+                    const isCurrentPlan =
+                      subscription?.active === "ACTIVE" && subscription?.plan === plan.id;
 
-                      {/* Header */}
-                      <div className="mb-6">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className={`p-2 rounded-lg ${plan.recommended ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}`}>
-                            <plan.icon size={24} />
-                          </div>
-                          {plan.id === 'ENTERPRISE' && <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-1 rounded">VIP</span>}
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-800">{plan.name}</h3>
-                        <p className="text-sm text-slate-500 mt-1">{plan.description}</p>
-                      </div>
-
-                      {/* Price */}
-                      <div className="mb-6">
-                        <span className="text-3xl font-extrabold text-slate-900">
-                          {plan.price.toLocaleString()}đ
-                        </span>
-                        <span className="text-slate-500 text-sm font-medium">{plan.period}</span>
-                      </div>
-
-                      {/* Button */}
-                      <button
-                        onClick={() => handleBuyPlan(plan)}
-                        className={`w-full py-3 rounded-xl font-bold text-sm mb-6 transition-all active:scale-95 shadow-lg ${plan.btnColor}`}
+                    return (
+                      <div
+                        key={plan.id}
+                        className={`relative rounded-2xl p-6 border-2 flex flex-col h-full transition-all hover:shadow-xl 
+          ${plan.color} 
+          ${plan.recommended ? 'scale-105 shadow-lg z-10' : 'hover:-translate-y-1'}`}
                       >
-                        Chọn gói này
-                      </button>
+                        {plan.recommended && (
+                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md uppercase tracking-wider">
+                            Khuyên dùng
+                          </div>
+                        )}
 
-                      {/* Features List */}
-                      <div className="space-y-4 flex-1">
-                        {/* AI Features Section */}
-                        {plan.aiFeatures.length > 0 && (
-                          <div className="bg-white/60 p-3 rounded-xl border border-slate-100">
-                            <p className="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1">
-                              <Bot size={14} /> Tính năng AI
+                        {/* Header */}
+                        <div className="mb-6">
+                          <div className="flex justify-between items-start mb-2">
+                            <div
+                              className={`p-2 rounded-lg ${plan.recommended
+                                ? 'bg-emerald-100 text-emerald-600'
+                                : 'bg-slate-100 text-slate-600'
+                                }`}
+                            >
+                              <plan.icon size={24} />
+                            </div>
+                            {plan.id === 'ENTERPRISE' && (
+                              <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-1 rounded">
+                                VIP
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-800">{plan.name}</h3>
+                          <p className="text-sm text-slate-500 mt-1">{plan.description}</p>
+                        </div>
+
+                        {/* Price */}
+                        <div className="mb-6">
+                          <span className="text-3xl font-extrabold text-slate-900">
+                            {plan.price.toLocaleString()}đ
+                          </span>
+                          <span className="text-slate-500 text-sm font-medium">
+                            {plan.period}
+                          </span>
+                        </div>
+
+                        {/* Button */}
+                        <button
+                          disabled={isCurrentPlan}
+                          onClick={() => handleBuyPlan(plan)}
+                          className={`w-full py-3 rounded-xl font-bold text-sm mb-6 transition-all
+            ${isCurrentPlan
+                              ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                              : plan.btnColor
+                            }`}
+                        >
+                          {isCurrentPlan ? "Gói hiện tại" : "Chọn gói này"}
+                        </button>
+
+                        {/* Features */}
+                        <div className="space-y-4 flex-1">
+                          {plan.aiFeatures.length > 0 && (
+                            <div className="bg-white/60 p-3 rounded-xl border border-slate-100">
+                              <p className="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1">
+                                <Bot size={14} /> Tính năng AI
+                              </p>
+                              <ul className="space-y-2">
+                                {plan.aiFeatures.map((feature, idx) => (
+                                  <li
+                                    key={idx}
+                                    className="flex items-start gap-2 text-sm font-medium text-slate-700"
+                                  >
+                                    <Sparkles size={14} className="text-yellow-500 mt-1 shrink-0" />
+                                    {feature}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">
+                              Quyền lợi
                             </p>
-                            <ul className="space-y-2">
-                              {plan.aiFeatures.map((feature, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-sm font-medium text-slate-700">
-                                  <Sparkles size={14} className="text-yellow-500 mt-1 shrink-0" />
+                            <ul className="space-y-3">
+                              {plan.features.map((feature, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-sm text-slate-600"
+                                >
+                                  <Check
+                                    size={16}
+                                    className={`mt-0.5 shrink-0 ${plan.recommended
+                                      ? 'text-emerald-500'
+                                      : 'text-slate-400'
+                                      }`}
+                                  />
                                   {feature}
                                 </li>
                               ))}
                             </ul>
                           </div>
-                        )}
-
-                        {/* Standard Features */}
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 uppercase mb-2">Quyền lợi</p>
-                          <ul className="space-y-3">
-                            {plan.features.map((feature, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-sm text-slate-600">
-                                <Check size={16} className={`mt-0.5 shrink-0 ${plan.recommended ? 'text-emerald-500' : 'text-slate-400'}`} />
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+
 
                 <div className="mt-10 flex flex-col md:flex-row justify-center items-center gap-6 text-xs text-slate-400">
                   <span className="flex items-center gap-1"><CreditCard size={14} /> Thanh toán đa dạng (Momo/VNPAY)</span>

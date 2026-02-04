@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, ArrowLeft, Home, ShoppingBag, Loader2 } from 'lucide-react';
 import Button from '@/components/ui/Button'; // Sử dụng lại Button của bạn
+import { getSubscriptionStudent } from '@/services/subscriptionService';
+import toast from 'react-hot-toast';
+
 
 export default function PaymentResult() {
     const [searchParams] = useSearchParams();
@@ -25,6 +28,26 @@ export default function PaymentResult() {
             // navigate('/');
         }
     }, [status, resultCode, orderId, navigate]);
+
+    useEffect(() => {
+        if (!isSuccess) return;
+
+        const fetchSubscription = async () => {
+            try {
+                console.log("Calling getSubscriptionStudent...");
+                const res = await getSubscriptionStudent();
+                const data = res.data.data;
+
+                toast.success(`Kích hoạt gói ${data.plan} thành công 🎉`);
+                console.log("Subscription =", data);
+            } catch (err) {
+                console.error("Không lấy được subscription:", err);
+                toast.error("Không thể cập nhật gói. Vui lòng F5 lại!");
+            }
+        };
+
+        fetchSubscription();
+    }, [isSuccess]);
 
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
