@@ -58,7 +58,7 @@ const INSTRUCTOR_PLANS = [
     id: "BASIC",
     name: "Cơ Bản",
     price: 300000,
-    period: "/ 3 tháng",
+    period: "/ 1 tháng",
     description: "Bắt đầu hành trình giảng dạy.",
     features: [
       "Tạo tối đa 3 khóa học",
@@ -75,7 +75,7 @@ const INSTRUCTOR_PLANS = [
     id: "PREMIUM",
     name: "Chuyên Nghiệp",
     price: 800000,
-    period: "/ 1 năm",
+    period: "/ 1 tháng",
     description: "Dành cho giảng viên chuyên nghiệp.",
     features: [
       "Tạo không giới hạn khóa học",
@@ -96,7 +96,7 @@ const INSTRUCTOR_PLANS = [
     id: "ENTERPRISE",
     name: "Doanh Nghiệp",
     price: 2000000,
-    period: "/ trọn đời",
+    period: "/ 1 năm",
     description: "Giải pháp toàn diện cho tổ chức.",
     features: [
       "Mọi tính năng Premium",
@@ -294,29 +294,16 @@ export default function InstructorProfile() {
   // Ví dụ: Đã mua PREMIUM → lock BASIC và PREMIUM, chỉ còn ENTERPRISE
   const isPlanLocked = (planId) => {
     if (!completedPlan) {
-      console.log("🔓 No completed plan - all plans unlocked");
       return false;
     }
 
-    const planOrder = PLAN_ORDER[planId];
-    const completedOrder = PLAN_ORDER[completedPlan];
-
-    // Lock nếu planId <= completedPlan
-    // Ví dụ: completedPlan = PREMIUM (order 2)
-    // - BASIC (order 1) → 1 <= 2 → LOCKED ✅
-    // - PREMIUM (order 2) → 2 <= 2 → LOCKED ✅
-    // - ENTERPRISE (order 3) → 3 <= 2 → UNLOCKED ❌
-    const isLocked = planOrder <= completedOrder;
+    // Chỉ khóa đúng gói đã mua, không khóa các gói nhỏ hơn
+    const isLocked = planId === completedPlan;
 
     console.log("🔒 Lock Check:", {
       planId,
-      planOrder,
       completedPlan,
-      completedOrder,
       isLocked,
-      reason: isLocked
-        ? `Đã sở hữu ${completedPlan} (order ${completedOrder}) >= ${planId} (order ${planOrder})`
-        : `${planId} (order ${planOrder}) cao hơn ${completedPlan} (order ${completedOrder})`,
     });
 
     return isLocked;
