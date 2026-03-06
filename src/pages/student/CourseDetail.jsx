@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
 import {
     Clock, BookOpen, Star, User, ArrowLeft,
     PlayCircle, Share2, Heart, AlertTriangle, Calendar, Info,
@@ -87,6 +88,9 @@ export default function CourseDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
 
+const [subscription, setSubscription] = useState(null);
+
+
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
     const [enrolling, setEnrolling] = useState(false);
@@ -95,6 +99,14 @@ export default function CourseDetail() {
     const [showEnrollModal, setShowEnrollModal] = useState(false);
     const [enrollStep, setEnrollStep] = useState(1); // 1: Chọn loại, 2: Chọn thanh toán
     const [paymentMethod, setPaymentMethod] = useState('VNPAY'); // 'MOMO' | 'VNPAY'
+
+   useEffect(() => {
+    const sub = sessionStorage.getItem("subscription");
+
+    if (sub) {
+        setSubscription(JSON.parse(sub));
+    }
+}, []);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -139,6 +151,7 @@ export default function CourseDetail() {
                     rejectionReason: apiData.rejectionReason,
                     createdAt: apiData.createdAt,
                     modules: mappedModules,
+                    enrolled: apiData.enrolled || false,
                     rating: 0,
                     reviews: 0,
                     students: apiData.students || 0,
@@ -148,6 +161,9 @@ export default function CourseDetail() {
 
                 setCourse(safeData);
                 setLoading(false);
+
+                console.log("API detail:", apiData);
+                console.log("enrolled detail:", apiData.enrolled);
             } catch (error) {
                 console.error("Lỗi tải khóa học", error);
                 toast.error("Không thể tải thông tin khóa học");
@@ -160,12 +176,39 @@ export default function CourseDetail() {
     // --- XỬ LÝ KHI NGƯỜI DÙNG CHỌN LOẠI ĐĂNG KÝ ---
     const handleSelectEnrollType = (type) => {
         if (type === 'SUBSCRIPTION') {
-            // Trường hợp 1: Dùng gói học -> Chuyển trang Upgrade
-            setShowEnrollModal(false);
+
+            if (!subscription || subscription.active !== "ACTIVE") {
             navigate('/student/profile?tab=upgrade');
+            return;
+        }
+
+            handleEnrollBySubscription();
         } else if (type === 'SINGLE_PURCHASE') {
             // Trường hợp 2: Mua lẻ -> Chuyển sang bước chọn thanh toán
             setEnrollStep(2);
+        }
+    };
+
+    const handleEnrollBySubscription = async () => {
+        try {
+            setEnrolling(true);
+            const type = 'SUBSCRIPTION';
+
+            await enrollCourse({courseId: course.id, type});
+
+            toast.success("Đăng ký khóa học thành công!");
+
+            setCourse(prev => ({
+                ...prev,
+                enrolled: true
+            }));
+
+            setShowEnrollModal(false);
+
+        } catch (error) {
+            toast.error("Không thể đăng ký khóa học");
+        } finally {
+            setEnrolling(false);
         }
     };
 
@@ -181,14 +224,14 @@ export default function CourseDetail() {
 
         try {
             let response;
-            
+
             // Chuẩn bị 3 tham số theo đúng thứ tự hàm service yêu cầu
             // Tham số 1: Ở đây là ID khóa học (tương ứng vị trí subscriptionPlan)
-            const subscriptionPlan = "COURSE"; 
+            const subscriptionPlan = "COURSE";
             // Tham số 2: Giá tiền
             const amount = course.price;
             const courseId = course.id
-            
+
             // Tham số 3: Nội dung thanh toán
             // Lưu ý: Nội dung nên viết không dấu để tránh lỗi ở cổng thanh toán
             const orderInfo = `Thanh toan khoa hoc ${course.title}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -196,11 +239,11 @@ export default function CourseDetail() {
             // 2. Gọi API tương ứng với 3 tham số
             if (paymentMethod === 'VNPAY') {
                 // Gọi API VNPAY (truyền 3 tham số rời)
-                response = await createPaymentVnpay(subscriptionPlan, amount, orderInfo,courseId);
+                response = await createPaymentVnpay(subscriptionPlan, amount, orderInfo, courseId);
             } else if (paymentMethod === 'MOMO') {
                 // Gọi API MOMO (truyền 3 tham số rời)
-                response = await createPaymentMomo(subscriptionPlan, amount, orderInfo,courseId);
-            } 
+                response = await createPaymentMomo(subscriptionPlan, amount, orderInfo, courseId);
+            }
 
             // 3. Trích xuất Link thanh toán
             const payUrl =
@@ -228,7 +271,7 @@ export default function CourseDetail() {
             setEnrolling(false);
         }
     };
-    
+
     // Reset modal khi đóng
     const closeEnrollModal = () => {
         setShowEnrollModal(false);
@@ -370,13 +413,22 @@ export default function CourseDetail() {
                             </div>
 
                             <div className="space-y-3">
-                                <button
-                                    onClick={() => setShowEnrollModal(true)}
-                                    className="w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2
-                                        bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200"
-                                >
-                                    Đăng ký ngay
-                                </button>
+                                {course.enrolled ? (
+                                    <button
+                                        disabled
+                                        className="w-full py-3.5 rounded-xl font-bold text-white bg-slate-400 cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        ✔ Đã đăng ký
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowEnrollModal(true)}
+                                        className="w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2
+        bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200"
+                                    >
+                                        Đăng ký ngay
+                                    </button>
+                                )}
 
                                 {course.status === 'DRAFT' && (
                                     <p className="text-xs text-amber-600 text-center">

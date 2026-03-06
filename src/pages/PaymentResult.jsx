@@ -164,7 +164,7 @@ export default function PaymentResult() {
         {/* Actions */}
         <div className="space-y-3">
           <button
-            onClick={() => navigate("/instructor/profile?tab=earnings")}
+            onClick={() => navigate("/instructor/profile?tab=upgrade")}
             className={`w-full py-3.5 rounded-xl font-bold text-white transition-all shadow-lg hover:shadow-xl active:scale-95 ${
               isSuccess
                 ? "bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600"

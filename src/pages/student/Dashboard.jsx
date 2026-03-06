@@ -182,7 +182,7 @@ export default function StudentDashboard() {
                 />
 
                 <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs font-bold px-2.5 py-1 rounded-md">
-                  Miễn phí
+                  {course.price || 'Miễn phí'} 
                 </div>
               </div>
 

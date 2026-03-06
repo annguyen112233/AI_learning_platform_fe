@@ -100,15 +100,15 @@ export default function Register() {
       <div className="w-full max-w-md">
 
         {/* Logo Section */}
-        <div className="text-center mb-6 animate-bounce-slow">
-          <div className="inline-flex items-center justify-center p-4 bg-green-100 rounded-full mb-3 text-green-600 shadow-sm border-4 border-white">
-            <BookOpen size={40} strokeWidth={2.5} />
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center p-6 bg-green-100 rounded-full mb-4 text-green-600 shadow-md border-4 border-white text-5xl">
+            🐳
           </div>
-          <h1 className="text-3xl font-extrabold text-green-700 tracking-tight">
-            English Master
-          </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            Bắt đầu hành trình chinh phục ngôn ngữ
+          <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+            Chào mừng trở lại!
+          </h2>
+          <p className="mt-2 text-slate-500 font-medium">
+            Sẵn sàng tiếp tục bài học hôm nay chưa?
           </p>
         </div>
 

@@ -12,7 +12,8 @@ import {
   LogOut,
   Bell,
   Settings,
-  Award
+  Award,
+  FileText
 } from 'lucide-react';
 
 export default function StudentLayout() {
@@ -24,6 +25,7 @@ export default function StudentLayout() {
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Tổng quan", path: "/student/dashboard" },
     { icon: BookOpen, label: "Khóa học", path: "/student/courses" },
+    { icon: FileText, label: "Thi thử", path: "/student/mock-test" },
     { icon: Award, label: "Thành tích", path: "/student/achievements" },
     { icon: MessageSquare, label: "Trợ lý AI", path: "/student/chat" },
     { icon: User, label: "Hồ sơ", path: "/student/profile" },
@@ -180,7 +182,7 @@ export default function StudentLayout() {
                   <div className="flex items-center gap-2 mt-0.5">
                     {/* Level */}
                     <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                      {user?.level || "Newbie"}
+                      {user?.level || "N5"}
                     </p>
 
                     {/* Subscription */}

@@ -27,6 +27,7 @@ import StudentProfile from "@/pages/student/Profile";
 import ChatMessage from "@/pages/student/ChatMessage";
 import Achievements from "@/pages/student/Achievements";
 import CourseDetail from "@/pages/student/CourseDetail";
+import QuizPage from "@/pages/student/MockTestPage";
 
 // Instructor Pages & Layout
 import InstructorLayout from "@/layouts/InstructorLayout";
@@ -103,6 +104,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<StudentDashboard />} />
               <Route path="courses" element={<MyCourses />} />
+              <Route path="mock-test" element={<QuizPage />} />
               <Route path="profile" element={<StudentProfile />} />
               <Route path="chat" element={<ChatMessage />} />
               <Route path="achievements" element={<Achievements />} />
