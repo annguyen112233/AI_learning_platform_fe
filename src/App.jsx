@@ -32,6 +32,9 @@ import QuizPage from "@/pages/student/MockTestPage";
 // Instructor Pages & Layout
 import InstructorLayout from "@/layouts/InstructorLayout";
 import InstructorDashboard from "@/pages/instructor/InstructorDashboard";
+import InstructorCourses from "@/pages/instructor/InstructorCourses";
+import InstructorStudents from "@/pages/instructor/InstructorStudents";
+import InstructorAnalytics from "@/pages/instructor/InstructorAnalytics";
 import InstructorProfile from "@/pages/instructor/Profile";
 import ModuleManager from "@/pages/instructor/ModuleManager";
 
@@ -46,6 +49,7 @@ import StaffDiscussions from "@/pages/staff/StaffDiscussions";
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import UserManagement from "@/pages/admin/UserManagement";
+import CourseManagement from "@/pages/admin/CourseManagement";
 
 // Fallback
 const NotFound = () => (
@@ -88,7 +92,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            
+
             {/* Payment Result (Thường là public hoặc cần login nhưng không cần layout) */}
             <Route path="/payment-result" element={<PaymentResult />} />
 
@@ -132,6 +136,9 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<InstructorDashboard />} />
+              <Route path="courses" element={<InstructorCourses />} />
+              <Route path="students" element={<InstructorStudents />} />
+              <Route path="analytics" element={<InstructorAnalytics />} />
               <Route path="profile" element={<InstructorProfile />} />
             </Route>
 
@@ -173,7 +180,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
-              {/* <Route path="courses" element={<CourseManagement />} /> */}
+              <Route path="courses" element={<CourseManagement />} />
             </Route>
 
             {/* ================= CATCH ALL ================= */}
