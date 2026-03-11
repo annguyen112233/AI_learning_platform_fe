@@ -13,6 +13,7 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 
 // Public Pages
 import Login from "@/pages/public/Login";
+import Home from "@/pages/public/Home";
 import Register from "@/pages/public/Register";
 import ForgotPassword from "@/pages/public/ForgotPassword";
 import ResetPassword from "@/pages/public/ResetPassword";
@@ -89,7 +90,7 @@ function App() {
 
           <Routes>
             {/* ================= PUBLIC ROUTES ================= */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

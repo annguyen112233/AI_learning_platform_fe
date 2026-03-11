@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import {
     BookOpen, Headphones, ChevronRight, ChevronLeft,
     CheckCircle, Clock, Send, Trophy, Star, Target,
-    Volume2, ArrowRight, RotateCcw, TrendingUp, XCircle, AlertCircle
+    Volume2, ArrowRight, RotateCcw, TrendingUp, XCircle, AlertCircle, Home as HomeIcon, X
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getPlacementQuestions, submitPlacementTest } from "@/services/placementService";
+import { useAuth } from "@/context/AuthContext";
 
 const JLPT_INFO = {
     N5: { color: "#10b981", label: "Sơ cấp", desc: "Hiểu tiếng Nhật cơ bản", icon: "⭐" },
@@ -18,8 +19,16 @@ const JLPT_INFO = {
 
 // ── Step 0: Landing ──────────────────────────────────────────────────────────
 function LandingStep({ onStart, loading }) {
+    const navigate = useNavigate();
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0f1117] via-[#13111c] to-[#0f1117] flex items-center justify-center p-6">
+        <div className="min-h-screen bg-gradient-to-br from-[#0f1117] via-[#13111c] to-[#0f1117] flex items-center justify-center p-6 relative">
+            {/* Back button for landing */}
+            <button 
+                onClick={() => navigate("/")}
+                className="absolute top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors font-bold"
+            >
+                <ArrowRight className="rotate-180 w-5 h-5" /> Trang chủ
+            </button>
             <div className="max-w-2xl w-full text-center">
                 {/* Hero icon */}
                 <div className="relative mb-8">
@@ -126,20 +135,30 @@ function QuizStep({ questions, answers, setAnswers, onSubmit, submitting }) {
 
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-                <div className="flex items-center gap-3">
-                    <span className="text-slate-400 text-sm">
-                        Câu <strong className="text-white">{current + 1}</strong> / {total}
-                    </span>
-                    {q.jlptLevel && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                            {q.jlptLevel}
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => window.confirm("Bạn có chắc muốn thoát bài test? Tiến trình sẽ không được lưu.") && (window.location.href = "/")}
+                        className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                        title="Thoát"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <div className="h-6 w-[1px] bg-slate-700 mx-1" />
+                    <div className="flex items-center gap-3">
+                        <span className="text-slate-400 text-sm">
+                            Câu <strong className="text-white">{current + 1}</strong> / {total}
                         </span>
-                    )}
-                    {q.questionType === "LISTENING" && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
-                            <Headphones className="w-3 h-3" /> Nghe
-                        </span>
-                    )}
+                        {q.jlptLevel && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                                {q.jlptLevel}
+                            </span>
+                        )}
+                        {q.questionType === "LISTENING" && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                                <Headphones className="w-3 h-3" /> Nghe
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-sm text-slate-500">Đã trả lời:</span>
@@ -260,6 +279,7 @@ function QuizStep({ questions, answers, setAnswers, onSubmit, submitting }) {
 // ── Step 2: Result ───────────────────────────────────────────────────────────
 function ResultStep({ result, onRetry }) {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const levelInfo = JLPT_INFO[result.estimatedLevel] || JLPT_INFO.N5;
     const levelColor = levelInfo.color;
 
@@ -404,19 +424,34 @@ function ResultStep({ result, onRetry }) {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={() => navigate("/")}
+                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition-all"
+                    >
+                        <HomeIcon className="w-4 h-4" /> Về Trang chủ
+                    </button>
                     <button
                         onClick={onRetry}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-sm transition-all"
                     >
                         <RotateCcw className="w-4 h-4" /> Làm lại
                     </button>
-                    <button
-                        onClick={() => navigate("/courses")}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-violet-500/25 transition-all"
-                    >
-                        Xem tất cả khóa học <ArrowRight className="w-4 h-4" />
-                    </button>
+                    {!user ? (
+                        <button
+                            onClick={() => navigate("/register", { state: { suggestedLevel: result.estimatedLevel } })}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold text-sm shadow-lg shadow-green-500/25 transition-all"
+                        >
+                            Đăng ký ngay <ArrowRight className="w-4 h-4" />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => navigate("/student/dashboard")}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-violet-500/25 transition-all"
+                        >
+                            Vào học ngay <ArrowRight className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

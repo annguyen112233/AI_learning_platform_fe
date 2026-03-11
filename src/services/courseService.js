@@ -1,7 +1,13 @@
 import api from './api';
 
-export const getAllCourses = () => {
-  return api.get('/courses/all-course/public');
+export const getAllCourses = (page = 1, size = 10, search = '') => {
+  return api.get('/courses/all-course/public', {
+    params: { page, size, search }
+  });
+}
+
+export const getCourseStats = () => {
+  return api.get('/courses/stats');
 }
 
 export const getCoursesForStudent = () => {

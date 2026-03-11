@@ -6,11 +6,14 @@ import {
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { sendOtp, register } from '@/services/authService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const suggestedLevel = location.state?.suggestedLevel;
+
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -110,6 +113,11 @@ export default function Register() {
           <p className="mt-2 text-slate-500 font-medium">
             Sẵn sàng tiếp tục bài học hôm nay chưa?
           </p>
+          {suggestedLevel && (
+            <div className="mt-4 inline-block px-4 py-2 bg-amber-100 border border-amber-200 rounded-2xl text-amber-700 font-bold text-sm animate-bounce-slow">
+              ✨ Level gợi ý cho bạn: <span className="text-lg">{suggestedLevel}</span>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] overflow-hidden border-2 border-slate-100">
