@@ -11,7 +11,8 @@ import {
   LogOut,
   Bell,
   Settings,
-  Shield            
+  Shield,
+  BookOpen
 } from 'lucide-react';
 
 export default function StaffLayout() {
@@ -24,6 +25,7 @@ export default function StaffLayout() {
     { icon: ClipboardCheck, label: "Kiểm duyệt nội dung", path: "/staff/moderation" }, 
     { icon: Flag, label: "Xử lý báo cáo", path: "/staff/reports" }, 
     { icon: MessageSquare, label: "Q&A & Bình luận", path: "/staff/discussions" }, 
+    { icon: BookOpen, label: "Ngân hàng Placement Test", path: "/staff/placement-docs" },
   ];
 
   const handleLogout = async () => {

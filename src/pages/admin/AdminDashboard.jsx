@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import {
   Users, BookOpen, Clock, AlertTriangle, ArrowUpRight, Eye,
   Calendar, CheckCircle, XCircle, TrendingUp, DollarSign,
-  GraduationCap, Loader2
+  GraduationCap, Loader2, X, Tag, User
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -69,6 +69,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pendingList, setPendingList] = useState([]);
+  const [viewingCourse, setViewingCourse] = useState(null); // modal xem chi tiết
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -192,7 +193,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-8 font-sans text-slate-800">
+    <>
+      <div className="space-y-8 font-sans text-slate-800">
 
       {/* ── HEADER ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -447,9 +449,9 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => toast(`Xem: ${course.title}`, { icon: '👀' })}
+                          onClick={() => setViewingCourse(course)}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                          title="Xem chi tiết"
+                          title="Xem chi tiết khóa học"
                         >
                           <Eye size={16} strokeWidth={2.5} />
                         </button>
@@ -477,6 +479,117 @@ export default function AdminDashboard() {
         )}
       </ChartCard>
 
-    </div>
+      </div>  {/* end main space-y-8 div */}
+
+      {/* ── COURSE DETAIL MODAL ── */}
+      {viewingCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-2xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-slate-900/5 animate-in slide-in-from-bottom-6 duration-300">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                  <BookOpen size={18} />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-800 text-sm line-clamp-1 max-w-md">{viewingCourse.title}</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Chi tiết khóa học chờ duyệt</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingCourse(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+
+              {/* Thumbnail */}
+              {viewingCourse.thumbnailUrl && (
+                <img
+                  src={viewingCourse.thumbnailUrl}
+                  alt="Thumbnail"
+                  className="w-full h-48 object-cover rounded-xl border border-slate-100"
+                />
+              )}
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Giảng viên</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold border border-green-200">
+                      {viewingCourse.instructorName?.charAt(0) || '?'}
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700 truncate">{viewingCourse.instructorName || 'N/A'}</span>
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cấp độ</p>
+                  <span className="inline-block px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200">
+                    {viewingCourse.jlptLevel || 'N/A'}
+                  </span>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Giá</p>
+                  <span className="text-sm font-bold text-emerald-600">
+                    {viewingCourse.price != null
+                      ? Number(viewingCourse.price).toLocaleString('vi-VN') + '₫'
+                      : 'Miễn phí'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Description */}
+              {viewingCourse.description && (
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Mô tả</p>
+                  <p className="text-sm text-slate-600 leading-relaxed">{viewingCourse.description}</p>
+                </div>
+              )}
+
+              {/* Modules */}
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Nội dung khóa học ({viewingCourse.modules?.length || 0} modules)
+                </p>
+                {viewingCourse.modules && viewingCourse.modules.length > 0 ? (
+                  <div className="space-y-2">
+                    {viewingCourse.modules.map((mod, idx) => (
+                      <div key={mod.moduleId || idx} className="bg-white border border-slate-200 rounded-xl p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <span className="text-sm font-semibold text-slate-700">{mod.title}</span>
+                          <span className="ml-auto text-xs text-slate-400">{mod.lessons?.length || 0} bài</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-700 font-medium">
+                    ⚠️ Chưa có module nào trong khóa học này.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex justify-end gap-3 flex-shrink-0">
+              <button
+                onClick={() => setViewingCourse(null)}
+                className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

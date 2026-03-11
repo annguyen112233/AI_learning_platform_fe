@@ -17,9 +17,7 @@ export const login = async (email, password) => {
     password,
   });
 
-  // access token lưu FE
-  sessionStorage.setItem('accessToken', res.data.accessToken);
-
+  // ✅ Không lưu ở đây vì Login.jsx tự xử lý đúng path (res.data.data.accessToken)
   return res;
 };
 export const logout = async () => {

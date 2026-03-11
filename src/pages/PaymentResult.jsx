@@ -10,19 +10,54 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getSubscriptionStudent } from "@/services/subscriptionService";
+import { jwtDecode } from "jwt-decode";
 
 export default function PaymentResult() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(5);
 
-  // Parse query parameters
-  const status = params.get("status"); // "success" | "failed" | "error"
+  // ── Detect payment provider & parse status ──────────────────────────────
+  // MoMo sandbox redirects with its own params: partnerCode, resultCode, message, orderId...
+  // VNPay/backend redirects with: status=success|failed, orderId
+  const resultCode = params.get("resultCode");   // MoMo param (0 = success)
+  const partnerCode = params.get("partnerCode"); // chỉ có khi MoMo redirect
+  const isMomoRedirect = partnerCode !== null || resultCode !== null;
+
+  // Determine status
+  let status;
+  if (isMomoRedirect) {
+    // MoMo: resultCode "0" = thành công
+    status = resultCode === "0" ? "success" : "failed";
+  } else {
+    // VNPay / backend redirect
+    status = params.get("status");
+  }
+
   const orderId = params.get("orderId");
-  const errorMessage = params.get("error"); // Nếu có lỗi từ backend
+  const momoMessage = params.get("message");     // MoMo error message
+  const errorMessage = params.get("error");      // Backend error
 
   const isSuccess = status === "success";
   const isFailed = status === "failed" || status === "error";
+
+  // Display message: ưu tiên MoMo message khi failed
+  const displayError = isMomoRedirect && !isSuccess
+    ? (momoMessage ? decodeURIComponent(momoMessage) : `Mã lỗi MoMo: ${resultCode}`)
+    : (errorMessage ? decodeURIComponent(errorMessage) : null);
+
+  // Đọc role từ JWT token để navigate đúng trang
+  const getSuccessRedirect = () => {
+    try {
+      const token = sessionStorage.getItem("accessToken");
+      if (token) {
+        const { role } = jwtDecode(token);
+        if (role === "STUDENT") return "/student/courses";
+        if (role === "INSTRUCTOR") return "/instructor/dashboard";
+      }
+    } catch {}
+    return "/student/courses"; // fallback
+  };
 
   // 1. Logic gọi API cập nhật/kiểm tra gói khi thanh toán thành công
   useEffect(() => {
@@ -32,15 +67,13 @@ export default function PaymentResult() {
       try {
         console.log("Calling getSubscriptionStudent...");
         const res = await getSubscriptionStudent();
-        // Kiểm tra cấu trúc response thực tế của bạn
         const data = res.data?.data || res.data; 
 
         toast.success(`Kích hoạt gói thành công 🎉`);
         console.log("Subscription =", data);
       } catch (err) {
         console.error("Không lấy được subscription:", err);
-        // Không chặn UI thành công, chỉ báo lỗi nhỏ hoặc log lại
-        toast.error("Thanh toán thành công nhưng chưa cập nhật được hiển thị gói. Vui lòng F5!");
+        // Không chặn UI thành công
       }
     };
 
@@ -54,7 +87,7 @@ export default function PaymentResult() {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
-            navigate("/instructor/profile?tab=earnings");
+            navigate(getSuccessRedirect());
             return 0;
           }
           return prev - 1;
@@ -120,17 +153,17 @@ export default function PaymentResult() {
             ? "Gói nâng cấp của bạn đã được kích hoạt. Bạn có thể bắt đầu sử dụng các tính năng Premium ngay bây giờ!"
             : isFailed
             ? "Giao dịch không thành công. Vui lòng kiểm tra lại thông tin thanh toán hoặc thử lại sau."
-            : errorMessage || "Có lỗi xảy ra trong quá trình xử lý thanh toán."}
+            : displayError || "Có lỗi xảy ra trong quá trình xử lý thanh toán."}
         </p>
 
         {/* Error Details (nếu có) */}
-        {errorMessage && !isSuccess && (
+        {displayError && !isSuccess && (
           <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-6 text-left">
             <p className="text-xs font-bold text-red-600 uppercase mb-1">
-              Chi tiết lỗi
+              {isMomoRedirect ? `Chi tiết lỗi MoMo (mã ${resultCode})` : 'Chi tiết lỗi'}
             </p>
             <p className="text-sm text-red-700 font-mono break-words">
-              {decodeURIComponent(errorMessage)}
+              {displayError}
             </p>
           </div>
         )}
@@ -164,7 +197,7 @@ export default function PaymentResult() {
         {/* Actions */}
         <div className="space-y-3">
           <button
-            onClick={() => navigate("/instructor/profile?tab=upgrade")}
+            onClick={() => navigate(getSuccessRedirect())}
             className={`w-full py-3.5 rounded-xl font-bold text-white transition-all shadow-lg hover:shadow-xl active:scale-95 ${
               isSuccess
                 ? "bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600"

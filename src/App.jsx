@@ -17,6 +17,7 @@ import Register from "@/pages/public/Register";
 import ForgotPassword from "@/pages/public/ForgotPassword";
 import ResetPassword from "@/pages/public/ResetPassword";
 import PaymentResult from "@/pages/PaymentResult";
+import PlacementTest from "@/pages/PlacementTest";
 
 // Student Pages & Layout
 import StudentLayout from "@/layouts/StudentLayout";
@@ -44,6 +45,7 @@ import StaffDashboard from "@/pages/staff/StaffDashboard";
 import StaffModeration from "@/pages/staff/StaffModeration";
 import StaffReports from "@/pages/staff/StaffReports";
 import StaffDiscussions from "@/pages/staff/StaffDiscussions";
+import StaffPlacementDocs from "@/pages/staff/StaffPlacementDocs";
 
 // Admin Pages & Layout
 import AdminLayout from "@/layouts/AdminLayout";
@@ -93,8 +95,11 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Payment Result (Thường là public hoặc cần login nhưng không cần layout) */}
+            {/* Payment Result */}
             <Route path="/payment-result" element={<PaymentResult />} />
+
+            {/* Placement Test - PUBLIC, không cần đăng nhập */}
+            <Route path="/placement-test" element={<PlacementTest />} />
 
             {/* ================= STUDENT ROUTES ================= */}
             <Route
@@ -166,6 +171,7 @@ function App() {
               <Route path="moderation" element={<StaffModeration />} />
               <Route path="discussions" element={<StaffDiscussions />} />
               <Route path="reports" element={<StaffReports />} />
+              <Route path="placement-docs" element={<StaffPlacementDocs />} />
             </Route>
 
             {/* ================= ADMIN ROUTES ================= */}

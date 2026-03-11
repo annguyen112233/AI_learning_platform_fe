@@ -15,9 +15,17 @@ export const SubscriptionProvider = ({ children }) => {
     }
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const fetchSubscription = async () => {
+    // ✅ Chỉ fetch khi đã có token (tránh 403 khi chưa đăng nhập)
+    const token = sessionStorage.getItem("accessToken");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await getSubscriptionStudent();
       const data = res.data.data;
@@ -33,9 +41,12 @@ export const SubscriptionProvider = ({ children }) => {
     }
   };
 
-  // 🔥 TỰ RESTORE KHI LOAD APP
+  // ✅ Chỉ fetch khi app load NẾU đã có token
   useEffect(() => {
-    fetchSubscription();
+    const token = sessionStorage.getItem("accessToken");
+    if (token) {
+      fetchSubscription();
+    }
   }, []);
 
   const clearSubscription = () => {
@@ -44,10 +55,11 @@ export const SubscriptionProvider = ({ children }) => {
   };
 
   return (
+    // ✅ Luôn render children — không block trang Login
     <SubscriptionContext.Provider
-      value={{ subscription, setSubscription, fetchSubscription,setSubscriptionStudent: setSubscription, clearSubscription, loading }}
+      value={{ subscription, setSubscription, fetchSubscription, setSubscriptionStudent: setSubscription, clearSubscription, loading }}
     >
-      {!loading && children}
+      {children}
     </SubscriptionContext.Provider>
   );
 };

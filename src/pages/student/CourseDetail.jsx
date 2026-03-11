@@ -151,7 +151,7 @@ const [subscription, setSubscription] = useState(null);
                     rejectionReason: apiData.rejectionReason,
                     createdAt: apiData.createdAt,
                     modules: mappedModules,
-                    enrolled: apiData.enrolled || false,
+                    enrolled: apiData.enrolled === true, // strict: chỉ true nếu backend trả về true
                     rating: 0,
                     reviews: 0,
                     students: apiData.students || 0,
