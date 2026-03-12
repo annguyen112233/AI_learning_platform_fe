@@ -112,7 +112,7 @@ export default function StaffPlacementDocs() {
             const fn = doc.documentType === "READING" ? generateReadingQuestions : generateListeningQuestions;
             const defaultCount = doc.documentType === "READING" ? questionCount : 3;
             const res = await fn(doc.documentId, defaultCount);
-            const count = res.data?.data?.generatedCount || res.data?.generatedCount || "?";
+            const count = res.data?.data?.questionsGenerated ?? res.data?.questionsGenerated ?? "?";
             toast.success(`✅ Đã sinh ${count} câu hỏi từ tài liệu!`);
             fetchDocs();
         } catch (err) {
@@ -140,7 +140,7 @@ export default function StaffPlacementDocs() {
         try {
             setMixGenerating(true);
             const res = await generateMixedQuestions(20);
-            const count = res.data?.data?.generatedCount || res.data?.generatedCount || "?";
+            const count = res.data?.data?.questionsGenerated ?? res.data?.questionsGenerated ?? "?";
             toast.success(`🎉 Đã sinh ${count} câu hỏi tổng hợp!`);
             fetchDocs();
         } catch (err) {

@@ -1,9 +1,9 @@
 import api from './api';
 
-export const getAllCourses = (page = 1, size = 10, search = '', sortBy = 'trending') => {
-  return api.get('/courses/all-course/public', {
-    params: { page, size, search, sortBy }
-  });
+export const getAllCourses = (page = 1, size = 10, search = '', sortBy = 'trending', jlptLevel = '') => {
+  const params = { page, size, search, sortBy };
+  if (jlptLevel) params.jlptLevel = jlptLevel;
+  return api.get('/courses/all-course/public', { params });
 }
 
 export const getCourseStats = () => {

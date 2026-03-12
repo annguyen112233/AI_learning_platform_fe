@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getStudentDashboard, getAllCourses } from '@/services/courseService';
 import { submitReview } from '@/services/reviewService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
 import {
@@ -18,7 +18,9 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
-  ArrowUpRight
+  ArrowUpRight,
+  BrainCircuit,
+  Sparkles
 } from 'lucide-react';
 
 export default function StudentDashboard() {
@@ -32,6 +34,9 @@ export default function StudentDashboard() {
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('recommended');
+
+  // JLPT Level từ Placement Test (lưu trong localStorage)
+  const [jlptLevel, setJlptLevel] = useState(() => localStorage.getItem('jlptLevel') || '');
   
   // Review Modal state
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -42,6 +47,7 @@ export default function StudentDashboard() {
   });
   
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Fetch Dashboard Stats & Recent Course
   const fetchDashboardData = async () => {
@@ -56,11 +62,13 @@ export default function StudentDashboard() {
     }
   };
 
-  // Fetch Courses with Search, Sort, Pagination
+  // Fetch Courses with Search, Sort, Pagination, và JlptLevel filter
   const fetchCourses = async (page = 1) => {
     try {
       setLoadingCourses(true);
-      const response = await getAllCourses(page, 10, search, sortBy);
+      // Thêm jlptLevel vào params khi sort = 'recommended'
+      const level = sortBy === 'recommended' ? jlptLevel : '';
+      const response = await getAllCourses(page, 10, search, sortBy, level);
       const data = response.data.data;
       setCourses(data.data);
       setPagination({
@@ -74,8 +82,23 @@ export default function StudentDashboard() {
     }
   };
 
+  // Fetch lần đầu
   useEffect(() => {
     fetchDashboardData();
+  }, []);
+
+  // Refetch khi navigate về Dashboard (location.key thay đổi)
+  useEffect(() => {
+    fetchDashboardData();
+  }, [location.key]);
+
+  // Refetch khi tab được focus lại (quay lại từ CoursePlayer)
+  useEffect(() => {
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') fetchDashboardData();
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
   }, []);
 
   useEffect(() => {
@@ -144,22 +167,65 @@ export default function StudentDashboard() {
 
   const { studentName, learningStreak, stats, recentCourse } = dashboardData || {};
 
+  // Level badge config
+  const LEVEL_BADGE = {
+    N1: 'bg-red-100 text-red-700 border-red-200',
+    N2: 'bg-orange-100 text-orange-700 border-orange-200',
+    N3: 'bg-blue-100 text-blue-700 border-blue-200',
+    N4: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    N5: 'bg-slate-100 text-slate-700 border-slate-200',
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 lg:p-10 space-y-12 font-sans animate-fade-in pb-20">
+
+      {/* Banner gợi ý làm Placement Test */}
+      {!jlptLevel && (
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-lg shadow-emerald-500/20">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/20 rounded-xl">
+              <BrainCircuit size={24} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-bold">Chưa có trình độ JLPT</p>
+              <p className="text-emerald-100 text-sm">Làm bài kiểm tra để Sensei AI gợi ý khóa học phù hợp nhất cho bạn!</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/student/mock-test')}
+            className="shrink-0 px-5 py-2.5 bg-white text-emerald-700 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-colors shadow flex items-center gap-2"
+          >
+            <Sparkles size={16} /> Làm bài test ngay
+          </button>
+        </div>
+      )}
 
       {/* 1. Header Welcome */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Xin chào, {studentName || "Học viên"}! 👋</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Xin chào, {studentName || 'Học viên'}! 👋</h1>
           <p className="text-slate-500 font-medium">Bạn đã hoàn thành 85% mục tiêu tuần này. Cố gắng lên nhé!</p>
         </div>
-        <div className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl shadow-sm border border-slate-100 hover:border-orange-200 transition-colors group">
-          <div className="bg-orange-100 p-2.5 rounded-xl text-orange-500 group-hover:scale-110 transition-transform">
-            <Zap size={20} fill="currentColor" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chuỗi học tập</p>
-            <span className="font-extrabold text-slate-700 text-lg leading-none">{learningStreak || 0} Ngày liên tiếp</span>
+        <div className="flex items-center gap-3">
+          {/* Badge trình độ JLPT */}
+          {jlptLevel && (
+            <div
+              onClick={() => navigate('/student/mock-test')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-bold text-sm cursor-pointer hover:opacity-80 transition-opacity ${LEVEL_BADGE[jlptLevel] || 'bg-slate-100 text-slate-700 border-slate-200'}`}
+              title="Trình độ JLPT được xác định qua bài test — Nhấn để làm lại"
+            >
+              <BrainCircuit size={16} />
+              Trình độ: {jlptLevel}
+            </div>
+          )}
+          <div className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl shadow-sm border border-slate-100 hover:border-orange-200 transition-colors group">
+            <div className="bg-orange-100 p-2.5 rounded-xl text-orange-500 group-hover:scale-110 transition-transform">
+              <Zap size={20} fill="currentColor" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chuỗi học tập</p>
+              <span className="font-extrabold text-slate-700 text-lg leading-none">{learningStreak || 0} Ngày liên tiếp</span>
+            </div>
           </div>
         </div>
       </div>
@@ -301,15 +367,14 @@ export default function StudentDashboard() {
                  value={sortBy}
                  onChange={(e) => setSortBy(e.target.value)}
                >
-                  <option value="recommended">Phù hợp trình độ</option>
+                  <option value="recommended">
+                    {jlptLevel ? `Phù hợp trình độ ${jlptLevel}` : 'Phù hợp trình độ'}
+                  </option>
                   <option value="trending">Phổ biến nhất</option>
                   <option value="newest">Mới nhất</option>
                   <option value="oldest">Cũ nhất</option>
                   <option value="rated">Đánh giá cao nhất</option>
                </select>
-               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <chevron-down />
-               </div>
             </div>
           </div>
         </div>

@@ -58,3 +58,8 @@ export const deleteLesson = (lessonId) => {
 export const deleteLessonVideo = (lessonId) => {
   return api.delete(`/lessons/${lessonId}/video`);
 };
+
+// ✅ Student mark lesson là đã hoàn thành → cập nhật progress
+export const completeLesson = (lessonId) => {
+  return api.post(`/lessons/${lessonId}/complete`);
+};

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   Filter,
@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Star
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getCoursesForStudent } from '@/services/courseService';
 
 // --- UI COMPONENTS ---
@@ -55,36 +55,44 @@ const ProgressBar = ({ progress, className = "" }) => (
 // --- MAIN PAGE ---
 export default function MyCourses() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('all');
-
   const [courses, setCourses] = useState([]);
   const [lastActiveCourse, setLastActiveCourse] = useState(null);
+  const [fetchKey, setFetchKey] = useState(0); // trigger refetch
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const response = await getCoursesForStudent();
-
-        // Kiểm tra cấu trúc response thực tế từ API của bạn
-        // Giả sử API trả về { data: { data: [...] } } hoặc { data: [...] }
-        const fetchedData = response.data?.data?.data || response.data || [];
-
-        if (Array.isArray(fetchedData)) {
-          setCourses(fetchedData);
-          if (fetchedData.length > 0) {
-            setLastActiveCourse(fetchedData[0]);
-          }
-        } else {
-          console.error("Dữ liệu API không phải là mảng:", fetchedData);
-          setCourses([]); // Fallback về mảng rỗng để không bị crash
-        }
+        const pageData = response.data?.data;
+        const fetchedData = pageData?.data || response.data?.data || [];
+        const list = Array.isArray(fetchedData) ? fetchedData : [];
+        setCourses(list);
+        if (list.length > 0) setLastActiveCourse(list[0]);
       } catch (error) {
-        console.error("Lỗi khi lấy danh sách khóa học:", error);
-        setCourses([]); // Fallback khi lỗi mạng
+        console.error('Lỗi khi lấy danh sách khóa học:', error);
+        setCourses([]);
       }
     };
     fetchCourses();
+  }, [fetchKey]); // refetch mỗi khi fetchKey thay đổi
+
+  // Refetch khi tab được focus lại (user quay lại từ CoursePlayer)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setFetchKey(k => k + 1);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
+
+  // Refetch mỗi khi navigate về trang này
+  useEffect(() => {
+    setFetchKey(k => k + 1);
+  }, [location.key]);
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-800">
 
@@ -150,10 +158,12 @@ export default function MyCourses() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-medium">
                     <span className="text-slate-600">Tiến độ hiện tại</span>
-                    <span className="text-slate-900">{lastActiveCourse.progress}%</span>
+                    <span className="text-slate-900">{lastActiveCourse.progressPercentage ?? 0}%</span>
                   </div>
-                  <ProgressBar progress={lastActiveCourse.progress} className="h-3" />
-                  <p className="text-xs text-slate-400 pt-1">Bạn đang làm rất tốt! Chỉ còn {lastActiveCourse.totalLessons - lastActiveCourse.completedLessons} bài nữa để hoàn thành.</p>
+                  <ProgressBar progress={lastActiveCourse.progressPercentage ?? 0} className="h-3" />
+                  <p className="text-xs text-slate-400 pt-1">
+                    Bạn đang làm rất tốt! Còn {(lastActiveCourse.totalLessons ?? 0) - (lastActiveCourse.completedLessons ?? 0)} bài nữa để hoàn thành.
+                  </p>
                 </div>
 
                 <div className="pt-2">
@@ -202,9 +212,9 @@ export default function MyCourses() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {Array.isArray(courses) && courses.map((course) => (
+            {Array.isArray(courses) && courses.map((course, idx) => (
               <div
-                key={course.id}
+                key={course.courseId || course.id || idx}
                 className="group flex flex-col bg-white rounded-2xl border border-slate-100 hover:border-emerald-100 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 overflow-hidden"
               >
                 {/* Card Image */}
@@ -212,10 +222,10 @@ export default function MyCourses() {
                   <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                     <Button variant="white" size="sm" className="w-full font-bold" onClick={() => navigate(`/student/learning/${course.courseId}`)}>
-                      {course.progress === 100 ? "Xem lại chứng chỉ" : "Vào học ngay"}
+                      {(course.progressPercentage ?? 0) === 100 ? 'Xem lại chứng chỉ' : 'Vào học ngay'}
                     </Button>
                   </div>
-                  {course.progress === 100 && (
+                  {(course.progressPercentage ?? 0) === 100 && (
                     <div className="absolute top-3 right-3 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1">
                       <Trophy size={12} /> Completed
                     </div>
@@ -239,10 +249,16 @@ export default function MyCourses() {
 
                   <div className="mt-auto space-y-2">
                     <div className="flex justify-between text-xs font-semibold text-slate-500">
-                      <span>{course.progress === 100 ? 'Đã hoàn thành' : `${course.completedLessons}/${course.totalLessons} bài học`}</span>
-                      <span className={course.progress === 100 ? 'text-emerald-600' : ''}>{course.progress}%</span>
+                      <span>
+                        {(course.progressPercentage ?? 0) === 100
+                          ? 'Đã hoàn thành'
+                          : `${course.completedLessons ?? 0}/${course.totalLessons ?? 0} bài học`}
+                      </span>
+                      <span className={(course.progressPercentage ?? 0) === 100 ? 'text-emerald-600' : ''}>
+                        {course.progressPercentage ?? 0}%
+                      </span>
                     </div>
-                    <ProgressBar progress={course.progress} className="h-1.5" />
+                    <ProgressBar progress={course.progressPercentage ?? 0} className="h-1.5" />
                   </div>
                 </div>
               </div>

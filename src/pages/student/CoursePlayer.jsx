@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Play, CheckCircle2, Lock, MessageSquare, List, Send, Sparkles,
-  ChevronLeft, Flame, Trophy, FileText, Download, Share2, Menu, X
+  ChevronLeft, Flame, Trophy, FileText, Download, Share2, Menu, X, Check
 } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-// Import service (Giả định đường dẫn)
 import { getCourseById } from '@/services/courseService';
+import { completeLesson } from '@/services/lessonService';
 
 // --- COMPONENT: THẺ BÀI HỌC (LESSON CARD) ---
 const LessonCard = ({ lesson, isActive, onClick }) => {
@@ -64,6 +64,15 @@ export default function CoursePlayer() {
   const [chapters, setChapters] = useState([]);
   const [currentLesson, setCurrentLesson] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Theo dõi lesson nào đã completed (lessonId → boolean)
+  const [completedLessonIds, setCompletedLessonIds] = useState(new Set());
+  const [completing, setCompleting] = useState(false);
+
+  // YouTube IFrame API
+  const iframeRef     = useRef(null);
+  const ytPlayerRef   = useRef(null);   // YouTube Player instance
+  const autoCompleted = useRef(false);  // Đảm bảo chỉ auto-complete 1 lần / lesson
 
   // UI State
   const [activeTab, setActiveTab] = useState('description'); // 'description' | 'discussion' | 'ai-chat'
@@ -124,6 +133,70 @@ export default function CoursePlayer() {
     fetchCourseData();
   }, [courseId, navigate]);
 
+  // ── YouTube auto-complete ───────────────────────────────────────────────────
+  // Hàm tiện ích: kiểm tra URL có phải YouTube không
+  const isYouTubeUrl = (url) => url && (
+    url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube-nocookie.com')
+  );
+
+  // Build YouTube embed URL với enablejsapi=1
+  const buildYouTubeEmbedUrl = (url) => {
+    if (!url) return '';
+    // Nếu đã là embed URL
+    let embedUrl = url;
+    if (url.includes('watch?v=')) {
+      const videoId = new URL(url).searchParams.get('v');
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (url.includes('youtu.be/')) {
+      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    }
+    // Thêm params cần thiết
+    const separator = embedUrl.includes('?') ? '&' : '?';
+    return `${embedUrl}${separator}enablejsapi=1&rel=0&modestbranding=1`;
+  };
+
+  // Gọi completeLesson (dùng useCallback để dùng trong event listener)
+  const autoCompleteLesson = useCallback(async (lessonId) => {
+    if (!lessonId || autoCompleted.current) return;
+    if (completedLessonIds.has(lessonId)) return;
+    autoCompleted.current = true;
+    try {
+      const res = await completeLesson(lessonId);
+      const { completedLessons, totalLessons, progressPercent } = res.data?.data || {};
+      setCompletedLessonIds(prev => new Set([...prev, lessonId]));
+      toast.success(
+        `⏹️ Video hoàn thành! Tiến độ: ${progressPercent ?? ''}% (${completedLessons ?? ''}/${totalLessons ?? ''} bài)`,
+        { icon: '✅', duration: 3000 }
+      );
+    } catch (err) {
+      console.error('Auto-complete lỗi:', err);
+    }
+  }, [completedLessonIds]);
+
+  // Lắng nghe postMessage từ YouTube IFrame
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // YouTube gửi dữ liệu dạng JSON string
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        // playerState: 0 = ended, 1 = playing, 2 = paused
+        if (data?.event === 'onStateChange' && data?.info === 0) {
+          // Video kết thúc → auto complete
+          autoCompleteLesson(currentLesson?.id);
+        }
+      } catch (_) { /* ignore non-JSON messages */ }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [currentLesson, autoCompleteLesson]);
+
+  // Reset autoCompleted flag khi chuyển sang lesson khác
+  useEffect(() => {
+    autoCompleted.current = false;
+  }, [currentLesson?.id]);
+
   // Scroll chat xuống cuối
   useEffect(() => {
     if (activeTab === 'ai-chat') {
@@ -147,6 +220,30 @@ export default function CoursePlayer() {
         text: `Cảm ơn câu hỏi về "${currentLesson?.title}". Đây là câu trả lời mẫu của AI...`
       }]);
     }, 1000);
+  };
+
+  // ✅ Gọi API mark lesson completed
+  const handleCompleteLesson = async () => {
+    if (!currentLesson || completing) return;
+    if (completedLessonIds.has(currentLesson.id)) {
+      toast('Bài học này đã được đánh dấu hoàn thành rồi!', { icon: '✅' });
+      return;
+    }
+
+    try {
+      setCompleting(true);
+      const res = await completeLesson(currentLesson.id);
+      const { completedLessons, totalLessons, progressPercent } = res.data?.data || {};
+
+      // Cập nhật local state để sidebar đổi icon ngay
+      setCompletedLessonIds(prev => new Set([...prev, currentLesson.id]));
+
+      toast.success(`✅ Hoàn thành! Tiến độ: ${progressPercent}% (${completedLessons}/${totalLessons} bài)`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Không thể lưu tiến độ, thử lại sau!');
+    } finally {
+      setCompleting(false);
+    }
   };
 
   if (loading) return (
@@ -197,21 +294,33 @@ export default function CoursePlayer() {
         {/* LEFT: CONTENT AREA (Video & Tabs) */}
         <div className="flex-1 flex flex-col overflow-y-auto bg-slate-100/50 scroll-smooth">
 
-          {/* 1. Video Player Area - Nơi thay đổi giao diện nền */}
-          {/* ================= VIDEO AREA (YOUTUBE DESKTOP STYLE) ================= */}
+          {/* 1. Video Player Area */}
           <div className="w-full bg-black">
-
-            {/* Video wrapper – ăn hết màn hình trừ sidebar */}
             <div className="w-full px-4 pt-4">
-              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
+              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black relative">
 
                 {currentLesson?.videoUrl ? (
-                  <iframe
-                    src={currentLesson.videoUrl}
-                    className="w-full h-full"
-                    allowFullScreen
-                    title="Video Player"
-                  />
+                  isYouTubeUrl(currentLesson.videoUrl) ? (
+                    // ✔ YouTube iframe với enablejsapi=1
+                    <iframe
+                      ref={iframeRef}
+                      key={currentLesson.id} // force re-mount khi đổi bài
+                      src={buildYouTubeEmbedUrl(currentLesson.videoUrl)}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      title={currentLesson.title}
+                    />
+                  ) : (
+                    // ✔ Video thường (mp4...) → dùng thẻ <video> với onEnded
+                    <video
+                      key={currentLesson.id}
+                      src={currentLesson.videoUrl}
+                      controls
+                      className="w-full h-full"
+                      onEnded={() => autoCompleteLesson(currentLesson.id)}
+                    />
+                  )
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                     <FileText size={48} className="mb-3 opacity-60" />
@@ -219,6 +328,12 @@ export default function CoursePlayer() {
                   </div>
                 )}
 
+                {/* Badge “Đã hoàn thành” overlay góc trên */}
+                {completedLessonIds.has(currentLesson?.id) && (
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-emerald-600/90 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm shadow">
+                    <CheckCircle2 size={13} strokeWidth={3} /> Đã hoàn thành
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -230,6 +345,23 @@ export default function CoursePlayer() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-900">{currentLesson?.title}</h2>
               <div className="flex gap-2">
+                {/* ✅ Nút Hoàn thành bài học */}
+                <button
+                  onClick={handleCompleteLesson}
+                  disabled={completing}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                    completedLessonIds.has(currentLesson?.id)
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-default'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg active:scale-95'
+                  } disabled:opacity-60`}
+                >
+                  {completing ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check size={16} strokeWidth={3} />
+                  )}
+                  {completedLessonIds.has(currentLesson?.id) ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
+                </button>
                 <button className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
                   <Share2 size={20} />
                 </button>
@@ -325,15 +457,23 @@ export default function CoursePlayer() {
             ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}
         `}>
           <div className="flex flex-col h-full pt-16 lg:pt-0"> {/* Padding top on mobile for header */}
-            <div className="p-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <List size={18} /> Nội dung khóa học
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">Hoàn thành 0/15 bài học</p>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div className="bg-emerald-500 w-[0%] h-full rounded-full"></div>
+              {/* Sidebar Header - hiện % tiến độ thực */}
+              <div className="p-4 border-b border-slate-100">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <List size={18} /> Nội dung khóa học
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Hoàn thành {completedLessonIds.size}/{chapters.reduce((sum, c) => sum + c.lessons.length, 0)} bài học
+                </p>
+                <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${chapters.reduce((sum, c) => sum + c.lessons.length, 0) > 0
+                      ? Math.round(completedLessonIds.size * 100 / chapters.reduce((sum, c) => sum + c.lessons.length, 0))
+                      : 0}%` }}
+                  />
+                </div>
               </div>
-            </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-6">
               {chapters.map((chapter, idx) => (
@@ -345,7 +485,10 @@ export default function CoursePlayer() {
                     {chapter.lessons.map((lesson) => (
                       <LessonCard
                         key={lesson.id}
-                        lesson={lesson}
+                        lesson={{
+                          ...lesson,
+                          status: completedLessonIds.has(lesson.id) ? 'completed' : lesson.status
+                        }}
                         isActive={currentLesson?.id === lesson.id}
                         onClick={setCurrentLesson}
                       />
