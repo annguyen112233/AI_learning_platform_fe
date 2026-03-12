@@ -176,7 +176,7 @@ export default function StaffModeration() {
                 category: 'Tiếng Nhật', // Or derive from description/other fields if available
                 desc: course.description,
                 itemsCount: totalLessons,
-                priority: 'MEDIUM', // Logic to determine priority could go here
+                priority: course.status === 'PENDING_APPROVAL' ? 'HIGH' : 'MEDIUM',
                 thumbnail: course.thumbnailUrl,
                 price: course.price,
                 status: course.status,

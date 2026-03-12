@@ -1,8 +1,8 @@
 import api from './api';
 
-export const getAllCourses = (page = 1, size = 10, search = '') => {
+export const getAllCourses = (page = 1, size = 10, search = '', sortBy = 'trending') => {
   return api.get('/courses/all-course/public', {
-    params: { page, size, search }
+    params: { page, size, search, sortBy }
   });
 }
 
@@ -38,4 +38,12 @@ export const verifyCourseAprroved = (courseId, status, reason) => {
 
 export const submitCourseForApproval = (courseId) => {
   return api.post(`/courses/${courseId}/submit-approval`);
+};
+
+export const getStudentDashboard = () => {
+  return api.get('/student/dashboard');
+};
+
+export const getStaffDashboard = () => {
+  return api.get('/staff/dashboard');
 };

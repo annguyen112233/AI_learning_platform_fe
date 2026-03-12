@@ -47,6 +47,7 @@ import StaffModeration from "@/pages/staff/StaffModeration";
 import StaffReports from "@/pages/staff/StaffReports";
 import StaffDiscussions from "@/pages/staff/StaffDiscussions";
 import StaffPlacementDocs from "@/pages/staff/StaffPlacementDocs";
+import StaffProfile from "@/pages/staff/Profile";
 
 // Admin Pages & Layout
 import AdminLayout from "@/layouts/AdminLayout";
@@ -173,6 +174,7 @@ function App() {
               <Route path="discussions" element={<StaffDiscussions />} />
               <Route path="reports" element={<StaffReports />} />
               <Route path="placement-docs" element={<StaffPlacementDocs />} />
+              <Route path="profile" element={<StaffProfile />} />
             </Route>
 
             {/* ================= ADMIN ROUTES ================= */}

@@ -8,6 +8,7 @@ import {
   ClipboardCheck, 
   Flag,           
   MessageSquare,  
+  User,
   LogOut,
   Bell,
   Settings,
@@ -26,6 +27,7 @@ export default function StaffLayout() {
     { icon: Flag, label: "Xử lý báo cáo", path: "/staff/reports" }, 
     { icon: MessageSquare, label: "Q&A & Bình luận", path: "/staff/discussions" }, 
     { icon: BookOpen, label: "Ngân hàng Placement Test", path: "/staff/placement-docs" },
+    { icon: User, label: "Hồ sơ cá nhân", path: "/staff/profile" },
   ];
 
   const handleLogout = async () => {
@@ -126,24 +128,31 @@ export default function StaffLayout() {
 
             <div className="h-8 w-[1px] bg-slate-200"></div>
 
-            {/* Staff Profile */}
-            <div className="flex items-center gap-3">
+            {/* Staff Profile - Clickable */}
+            <NavLink 
+              to="/staff/profile" 
+              className="flex items-center gap-3 hover:bg-green-50/50 p-1.5 rounded-2xl transition-all cursor-pointer group"
+            >
               {/* Avatar - Viền Xanh lá */}
-              <div className="w-10 h-10 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center text-green-700 font-bold text-lg shadow-sm">
-                S
+              <div className="w-10 h-10 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center text-green-700 font-bold text-lg shadow-sm overflow-hidden group-hover:scale-105 transition-transform">
+                {user?.imageUrl ? (
+                  <img src={user.imageUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{user?.fullName?.charAt(0) || "S"}</span>
+                )}
               </div>
 
               {/* Name + Role Badge */}
               <div className="hidden md:block">
-                <p className="text-sm font-bold text-slate-700 leading-tight">
+                <p className="text-sm font-bold text-slate-700 leading-tight group-hover:text-green-700 transition-colors">
                   {user?.fullName || "Staff Member"}
                 </p>
                 {/* Badge Role: MODERATOR - Màu Xanh lá */}
-                <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded w-fit mt-0.5 border border-green-100">
+                <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded w-fit mt-0.5 border border-green-100 group-hover:bg-green-100 transition-colors">
                   MODERATOR
                 </p>
               </div>
-            </div>
+            </NavLink>
           </div>
         </header>
 

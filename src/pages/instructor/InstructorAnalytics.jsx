@@ -127,7 +127,6 @@ export default function InstructorAnalytics() {
             {/* HEADER */}
             <div>
                 <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Thống kê & Phân tích</h1>
-                <p className="text-slate-500 mt-0.5 text-sm font-medium">Dữ liệu thực từ database — cập nhật mỗi lần tải trang.</p>
             </div>
 
             {/* OVERVIEW STATS */}
