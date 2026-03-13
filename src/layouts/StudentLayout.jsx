@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -13,7 +13,10 @@ import {
   Bell,
   Settings,
   Award,
-  FileText
+  FileText,
+  Menu,
+  X,
+  ChevronLeft,
 } from 'lucide-react';
 
 export default function StudentLayout() {
@@ -21,19 +24,20 @@ export default function StudentLayout() {
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
   const { subscription } = useSubscription();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Tổng quan", path: "/student/dashboard" },
-    { icon: BookOpen, label: "Khóa học", path: "/student/courses" },
-    { icon: FileText, label: "Thi thử", path: "/student/mock-test" },
-    { icon: Award, label: "Thành tích", path: "/student/achievements" },
-    { icon: MessageSquare, label: "Trợ lý AI", path: "/student/chat" },
-    { icon: User, label: "Hồ sơ", path: "/student/profile" },
+    { icon: BookOpen,        label: "Khóa học",  path: "/student/courses" },
+    { icon: FileText,        label: "Thi thử",   path: "/student/mock-test" },
+    { icon: Award,           label: "Thành tích",path: "/student/achievements" },
+    { icon: MessageSquare,   label: "Trợ lý AI", path: "/student/chat" },
+    { icon: User,            label: "Hồ sơ",     path: "/student/profile" },
   ];
 
   const handleLogout = async () => {
     try {
-      await logout(); // 🔥 gọi BE để blacklist token
+      await logout();
     } catch (err) {
       console.warn("Logout failed (token may already be expired)", err);
     } finally {
@@ -43,180 +47,340 @@ export default function StudentLayout() {
     }
   };
 
-
-  const handleGoProfile = () => {
-    navigate("/student/profile");
-  };
+  const handleGoProfile = () => navigate("/student/profile");
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800">
 
-      {/* SIDEBAR */}
-      <aside className="w-72 bg-white border-r border-slate-100 flex flex-col fixed h-full z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-
-        {/* Logo */}
-        <div className="h-20 flex items-center gap-3 px-8 border-b border-slate-50">
-          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600 shadow-sm text-2xl">
-            🐳
+      {/* ══ SIDEBAR ══ */}
+      <aside
+        style={{
+          width: sidebarOpen ? 288 : 72,
+          minWidth: sidebarOpen ? 288 : 72,
+          transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1), min-width 0.3s cubic-bezier(0.4,0,0.2,1)',
+          overflow: 'hidden',
+          position: 'fixed',
+          height: '100%',
+          zIndex: 30,
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'white',
+          borderRight: '1px solid #f1f5f9',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.04)',
+        }}
+      >
+        {/* Logo + toggle button */}
+        <div
+          style={{
+            height: 80,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: sidebarOpen ? '0 24px' : '0 16px',
+            borderBottom: '1px solid #f8fafc',
+            gap: 8,
+            transition: 'padding 0.3s',
+          }}
+        >
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden', flex: 1 }}>
+            <div style={{
+              width: 40, height: 40, minWidth: 40,
+              background: '#dcfce7', borderRadius: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 22, flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(22,163,74,0.12)',
+            }}>
+              🐳
+            </div>
+            <span style={{
+              fontWeight: 900, fontSize: 17, color: '#15803d',
+              whiteSpace: 'nowrap',
+              opacity: sidebarOpen ? 1 : 0,
+              transform: sidebarOpen ? 'translateX(0)' : 'translateX(-8px)',
+              transition: 'opacity 0.2s, transform 0.25s',
+              pointerEvents: sidebarOpen ? 'auto' : 'none',
+            }}>
+              SABO Academy
+            </span>
           </div>
-          <span className="text-xl font-extrabold text-green-700 tracking-tight">
-            SABO Academy
-          </span>
+
+          {/* Collapse / Expand button */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            title={sidebarOpen ? 'Thu gọn sidebar' : 'Mở rộng sidebar'}
+            style={{
+              width: 32, height: 32, minWidth: 32,
+              borderRadius: 8,
+              border: 'none',
+              background: sidebarOpen ? '#f1f5f9' : '#dcfce7',
+              color: sidebarOpen ? '#64748b' : '#15803d',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#dcfce7';
+              e.currentTarget.style.color = '#15803d';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = sidebarOpen ? '#f1f5f9' : '#dcfce7';
+              e.currentTarget.style.color = sidebarOpen ? '#64748b' : '#15803d';
+            }}
+          >
+            <ChevronLeft
+              size={18}
+              style={{
+                transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+                transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
+              }}
+            />
+          </button>
         </div>
 
-
         {/* Navigation */}
-        <nav className="flex-1 p-6 space-y-2">
-          {sidebarItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${isActive
-                  ? "bg-green-50 text-green-700 font-bold shadow-sm translate-x-1"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium hover:translate-x-1"
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon
-                    size={22}
-                    strokeWidth={isActive ? 2.5 : 2}
-                    className={
-                      isActive
-                        ? "text-green-600"
-                        : "text-slate-400 group-hover:text-green-500"
-                    }
-                  />
-                  {item.label}
-                </>
-              )}
-            </NavLink>
-          ))}
+        <nav style={{ flex: 1, padding: sidebarOpen ? '24px 16px' : '24px 8px', overflowY: 'auto', transition: 'padding 0.3s' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {sidebarItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                title={!sidebarOpen ? item.label : undefined}
+                className={({ isActive }) =>
+                  `group flex items-center rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? 'bg-green-50 text-green-700 font-bold shadow-sm'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium'
+                  }`
+                }
+                style={{
+                  gap: sidebarOpen ? 12 : 0,
+                  padding: sidebarOpen ? '11px 16px' : '11px',
+                  justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                  transition: 'all 0.3s',
+                }}
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon
+                      size={22}
+                      strokeWidth={isActive ? 2.5 : 2}
+                      style={{ flexShrink: 0, color: isActive ? '#16a34a' : undefined }}
+                    />
+                    <span style={{
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      opacity: sidebarOpen ? 1 : 0,
+                      maxWidth: sidebarOpen ? 200 : 0,
+                      transition: 'opacity 0.2s, max-width 0.25s',
+                      display: 'block',
+                    }}>
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         </nav>
 
         {/* Bottom Actions */}
-        <div className="p-6 border-t border-slate-50 space-y-2">
+        <div style={{ padding: sidebarOpen ? '16px' : '16px 8px', borderTop: '1px solid #f8fafc', display: 'flex', flexDirection: 'column', gap: 8, transition: 'padding 0.3s' }}>
 
           {/* Cài đặt */}
           <button
-            className="
-              flex items-center gap-3 px-4 py-3
-              bg-green-100 text-green-800
-              hover:bg-green-200 hover:shadow-sm
-              w-full rounded-xl transition-all font-semibold
-              group
-            "
+            title={!sidebarOpen ? 'Cài đặt' : undefined}
+            style={{
+              display: 'flex', alignItems: 'center',
+              gap: sidebarOpen ? 12 : 0,
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              padding: sidebarOpen ? '11px 16px' : '11px',
+              background: '#dcfce7', color: '#166534',
+              borderRadius: 12, border: 'none',
+              fontWeight: 600, fontSize: 14, cursor: 'pointer',
+              transition: 'all 0.3s',
+              width: '100%',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#bbf7d0'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#dcfce7'; }}
           >
-            <Settings
-              size={22}
-              className="text-green-700 group-hover:rotate-90 transition-transform duration-300"
-            />
-            <span>Cài đặt</span>
+            <Settings size={22} style={{ flexShrink: 0 }} />
+            <span style={{
+              whiteSpace: 'nowrap', overflow: 'hidden',
+              opacity: sidebarOpen ? 1 : 0,
+              maxWidth: sidebarOpen ? 200 : 0,
+              transition: 'opacity 0.2s, max-width 0.25s',
+            }}>
+              Cài đặt
+            </span>
           </button>
 
           {/* Đăng xuất */}
           <button
             onClick={handleLogout}
-            className="
-              flex items-center gap-3 px-4 py-3
-              bg-green-600 text-white
-              hover:bg-green-700 hover:shadow-md
-              w-full rounded-xl transition-all font-bold
-              group
-            "
+            title={!sidebarOpen ? 'Đăng xuất' : undefined}
+            style={{
+              display: 'flex', alignItems: 'center',
+              gap: sidebarOpen ? 12 : 0,
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              padding: sidebarOpen ? '11px 16px' : '11px',
+              background: '#16a34a', color: 'white',
+              borderRadius: 12, border: 'none',
+              fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              transition: 'all 0.3s',
+              width: '100%',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#15803d'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#16a34a'; }}
           >
-            <LogOut
-              size={22}
-              className="group-hover:-translate-x-1 transition-transform"
-            />
-            <span>Đăng xuất</span>
+            <LogOut size={22} style={{ flexShrink: 0 }} />
+            <span style={{
+              whiteSpace: 'nowrap', overflow: 'hidden',
+              opacity: sidebarOpen ? 1 : 0,
+              maxWidth: sidebarOpen ? 200 : 0,
+              transition: 'opacity 0.2s, max-width 0.25s',
+            }}>
+              Đăng xuất
+            </span>
           </button>
-
         </div>
       </aside>
 
-      {/* MAIN */}
-      <div className="flex-1 ml-72 flex flex-col h-screen overflow-hidden relative">
+      {/* ══ MAIN CONTENT ══ */}
+      <div
+        style={{
+          marginLeft: sidebarOpen ? 288 : 72,
+          transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
+        {/* TOP BAR */}
+        <header
+          style={{
+            height: 80,
+            background: 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: '1px solid #f1f5f9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 32px',
+            position: 'sticky',
+            top: 0,
+            zIndex: 20,
+          }}
+        >
+          {/* Hamburger (mobile / extra toggle) */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            title="Toggle sidebar"
+            style={{
+              width: 40, height: 40, borderRadius: 10,
+              border: 'none', background: '#f8fafc',
+              color: '#475569', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.color = '#15803d'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#475569'; }}
+          >
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
 
-        {/* TOP BAR — chỉ còn chuông + user */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-end px-8 sticky top-0 z-20">
-          <div className="flex items-center gap-6">
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
             {/* Notification */}
-            <button className="relative p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
+            <button style={{
+              position: 'relative', padding: 8,
+              background: 'none', border: 'none',
+              color: '#94a3b8', cursor: 'pointer',
+              borderRadius: '50%', transition: 'background 0.2s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+            >
               <Bell size={22} />
-              <span className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+              <span style={{
+                position: 'absolute', top: 8, right: 10,
+                width: 10, height: 10,
+                background: '#f43f5e', borderRadius: '50%',
+                border: '2px solid white',
+              }} />
             </button>
 
-            <div className="h-8 w-[1px] bg-slate-200"></div>
+            <div style={{ height: 32, width: 1, background: '#e2e8f0' }} />
 
             {/* User Profile */}
             <div
               onClick={handleGoProfile}
-              className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-100"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                cursor: 'pointer', padding: '6px 12px 6px 6px',
+                borderRadius: 999, border: '1px solid transparent',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'transparent'; }}
             >
-              {/* User Profile */}
-              <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-slate-100">
-
-                {/* Avatar */}
-                {user?.imageUrl ? (
-                  <img
-                    src={user.imageUrl}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full object-cover border-2 border-green-200 shadow-sm"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-200 flex items-center justify-center text-green-700 font-bold text-lg shadow-sm">
-                    {(user?.fullName || "U")[0].toUpperCase()}
-                  </div>
-                )}
-
-                {/* Name + Level */}
-                <div className="hidden md:block">
-                  <p className="text-sm font-bold text-slate-700 leading-tight">
-                    {user?.fullName || "Học viên"}
-                  </p>
-
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {/* Level */}
-                    <p className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                      {user?.level || "N5"}
-                    </p>
-
-                    {/* Subscription */}
-                    {subscription?.active === "ACTIVE" && (
-                      <p
-                        className={`
-      text-[10px] uppercase font-bold px-1.5 py-0.5 rounded
-      ${subscription.plan === "PREMIUM" ? "bg-amber-100 text-amber-700" : ""}
-      ${subscription.plan === "ENTERPRISE" ? "bg-purple-100 text-purple-700" : ""}
-      ${subscription.plan === "BASIC" ? "bg-slate-100 text-slate-600" : ""}
-    `}
-                      >
-                        {subscription.plan}
-                      </p>
-                    )}
-
-                  </div>
+              {user?.imageUrl ? (
+                <img
+                  src={user.imageUrl}
+                  alt="Avatar"
+                  style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid #bbf7d0' }}
+                />
+              ) : (
+                <div style={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: '#dcfce7', border: '2px solid #bbf7d0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 'bold', fontSize: 18, color: '#15803d',
+                }}>
+                  {(user?.fullName || 'U')[0].toUpperCase()}
                 </div>
-
-
+              )}
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#334155', lineHeight: 1.2 }}>
+                  {user?.fullName || 'Học viên'}
+                </p>
+                <div style={{ display: 'flex', gap: 6, marginTop: 2, alignItems: 'center' }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: '#16a34a',
+                    background: '#f0fdf4', padding: '2px 6px', borderRadius: 4,
+                    textTransform: 'uppercase',
+                  }}>
+                    {user?.level || 'N5'}
+                  </span>
+                  {subscription?.active === 'ACTIVE' && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700,
+                      padding: '2px 6px', borderRadius: 4,
+                      textTransform: 'uppercase',
+                      background: subscription.plan === 'PREMIUM'   ? '#fef3c7' :
+                                  subscription.plan === 'ENTERPRISE'? '#f3e8ff' : '#f1f5f9',
+                      color:      subscription.plan === 'PREMIUM'   ? '#92400e' :
+                                  subscription.plan === 'ENTERPRISE'? '#7c3aed' : '#475569',
+                    }}>
+                      {subscription.plan}
+                    </span>
+                  )}
+                </div>
               </div>
-
             </div>
-
           </div>
         </header>
 
-        {/* CONTENT */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-8 scroll-smooth">
-          <div className="max-w-6xl mx-auto pb-10">
+        {/* PAGE CONTENT */}
+        <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '32px' }}>
             <Outlet />
           </div>
         </main>
-
       </div>
     </div>
   );
