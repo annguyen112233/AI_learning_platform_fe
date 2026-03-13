@@ -10,6 +10,9 @@ export default function Button({ children, variant = 'primary', className = '', 
     // 👉 VARIANT XANH LÁ
     success: "bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-200",
     successLight: "bg-green-100 hover:bg-green-200 text-green-800 shadow-sm",
+
+    // 👉 VARIANT ĐỎ (XÓA)
+    danger: "bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-200",
   };
 
   return (

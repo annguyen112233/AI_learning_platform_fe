@@ -149,7 +149,8 @@ export default function MyCourses() {
                     <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md mb-2 inline-block">Học gần nhất</span>
                     <h2 className="text-2xl font-bold text-slate-800 mb-1">{lastActiveCourse.title}</h2>
                     <p className="text-slate-500 text-sm flex items-center gap-2">
-                      <Clock size={14} /> Truy cập {lastActiveCourse.lastAccessed} • {lastActiveCourse.instructor}
+                      <Clock size={14} /> 
+                      Truy cập {lastActiveCourse.lastAccessed ? new Date(lastActiveCourse.lastAccessed).toLocaleDateString() : 'gần đây'} • {lastActiveCourse.instructor}
                     </p>
                   </div>
                   <Button variant="ghost" className="hidden md:flex"><MoreHorizontal size={20} /></Button>

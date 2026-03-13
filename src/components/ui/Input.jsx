@@ -24,10 +24,9 @@ export default function Input({
       )}
 
       <div className="relative">
-        {/* Icon bên trái */}
         {Icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-            <Icon size={18} />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center justify-center">
+            {React.isValidElement(Icon) ? Icon : <Icon size={18} />}
           </div>
         )}
 

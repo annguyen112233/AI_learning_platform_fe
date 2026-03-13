@@ -54,6 +54,21 @@ export const deleteLesson = (lessonId) => {
   return api.delete(`/lessons/${lessonId}`);
 };
 
+// ✅ Update lesson
+export const updateLesson = (lessonId, title, orderIndex, videoFile, documentFile) => {
+  const formData = new FormData();
+  if (title) formData.append("title", title);
+  if (orderIndex !== undefined) formData.append("orderIndex", orderIndex);
+  if (videoFile) formData.append("videoFile", videoFile, videoFile.name);
+  if (documentFile) formData.append("documentFile", documentFile, documentFile.name);
+
+  return api.put(`/lessons/${lessonId}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
 // ✅ Delete video from lesson
 export const deleteLessonVideo = (lessonId) => {
   return api.delete(`/lessons/${lessonId}/video`);
