@@ -23,7 +23,7 @@ import {
     ExternalLink
 } from 'lucide-react';
 
-import { getAllCourses, verifyCourseAprroved } from '@/services/courseService';
+import { getAllCourses, verifyCourseAprroved, getCourseStats, reviewUpdateRequest, reviewDeletionRequest } from '@/services/courseService';
 import CourseViewer from '../../components/ui/CourseViewer';
 
 
@@ -67,6 +67,18 @@ export default function StaffModeration() {
 
     const [allCourses, setAllCourses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [courseStats, setCourseStats] = useState({
+        pendingCount: 0,
+        approvedCount: 0,
+        rejectedCount: 0,
+        totalCount: 0
+    });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const pageSize = 10;
 
     const quickReasons = [
         "Vi phạm bản quyền hình ảnh/âm thanh",
@@ -93,34 +105,69 @@ export default function StaffModeration() {
             label: 'Bị từ chối',
             className: 'bg-red-100 text-red-700 border border-red-200',
         },
+        PENDING_UPDATE: {
+            label: 'Chờ duyệt cập nhật',
+            className: 'bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200',
+        },
+        PENDING_DELETION: {
+            label: 'Chờ duyệt xóa',
+            className: 'bg-orange-100 text-orange-700 border border-orange-200',
+        },
+        ARCHIVED: {
+            label: 'Đã lưu trữ',
+            className: 'bg-slate-300 text-slate-700 border border-slate-400',
+        },
     };
 
-
-    // --- 1. FETCH DATA ---
-    useEffect(() => {
-        const fetchCourses = async () => {
-            setIsLoading(true);
-            try {
-                const response = await getAllCourses();
-                // Accessing data based on your JSON structure: response.data.data.data
-                const fetchedData = response.data?.data?.data || [];
-
-                if (Array.isArray(fetchedData)) {
-                    setAllCourses(fetchedData);
-                } else {
-                    console.error("Dữ liệu API không phải là mảng:", fetchedData);
-                    setAllCourses([]);
-                }
-            } catch (error) {
-                console.error("Lỗi khi lấy danh sách khóa học:", error);
-                setAllCourses([]);
-                toast.error("Không thể tải danh sách khóa học");
-            } finally {
-                setIsLoading(false);
+    const fetchStats = async () => {
+        try {
+            const res = await getCourseStats();
+            if (res.data?.data) {
+                setCourseStats(res.data.data);
             }
-        };
-        fetchCourses();
+        } catch (error) {
+            console.error("Lỗi khi tải thống kê:", error);
+        }
+    };
+
+    const fetchCourses = async (page = 1, search = searchQuery) => {
+        setIsLoading(true);
+        try {
+            const response = await getAllCourses(page, pageSize, search);
+            console.log("Staff Moderation API Response:", response.data);
+            
+            const pageData = response.data?.data;
+            const content = pageData?.data || [];
+            
+            setAllCourses(content);
+            setTotalPages(pageData?.totalPages || 0);
+            setTotalElements(pageData?.totalElements || 0);
+            setCurrentPage(pageData?.currentPage || page);
+
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa học:", error);
+            setAllCourses([]);
+            setTotalPages(0);
+            setTotalElements(0);
+            toast.error("Không thể tải danh sách khóa học");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCourses(1);
+        fetchStats();
     }, []);
+
+    // Debounce search
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchCourses(1, searchQuery);
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
 
     // --- 2. DATA MAPPING (API -> UI) ---
     const mappedCourses = useMemo(() => {
@@ -141,11 +188,13 @@ export default function StaffModeration() {
                 category: 'Tiếng Nhật', // Or derive from description/other fields if available
                 desc: course.description,
                 itemsCount: totalLessons,
-                priority: 'MEDIUM', // Logic to determine priority could go here
+                priority: course.status === 'PENDING_APPROVAL' ? 'HIGH' : 'MEDIUM',
                 thumbnail: course.thumbnailUrl,
                 price: course.price,
                 status: course.status,
-                modules: course.modules || [] // Pass modules for the modal
+                modules: course.modules || [], // Pass modules for the modal
+                pendingUpdateNote: course.pendingUpdateNote,
+                deletionRequestNote: course.deletionRequestNote
             };
         });
     }, [allCourses]);
@@ -198,27 +247,56 @@ export default function StaffModeration() {
 
     const handleApprove = async () => {
         try {
-            await verifyCourseAprroved(selectedItem.id, 'APPROVED');
-
-            toast.success(`Đã duyệt thành công: ${selectedItem.title}`, {
-                style: { background: '#10B981', color: '#fff' },
-                iconTheme: { primary: '#fff', secondary: '#10B981' },
-            });
+            if (selectedItem.status === 'PENDING_UPDATE') {
+                const isUnlockRequest = selectedItem.pendingUpdateNote?.startsWith('REQUEST_UNLOCK');
+                const action = isUnlockRequest ? 'UNLOCK' : 'APPROVED';
+                
+                await reviewUpdateRequest(selectedItem.id, action);
+                
+                const successMsg = isUnlockRequest 
+                    ? `Đã mở khóa chỉnh sửa cho: ${selectedItem.title}` 
+                    : `Đã duyệt cập nhật: ${selectedItem.title}`;
+                    
+                toast.success(successMsg, { style: { background: '#10B981', color: '#fff' } });
+            } else if (selectedItem.status === 'PENDING_DELETION') {
+                await reviewDeletionRequest(selectedItem.id, 'APPROVED');
+                toast.success(`Đã duyệt xóa khóa học: ${selectedItem.title}`, { style: { background: '#10B981', color: '#fff' } });
+            } else {
+                await verifyCourseAprroved(selectedItem.id, 'APPROVED');
+                toast.success(`Đã duyệt thành công: ${selectedItem.title}`, { style: { background: '#10B981', color: '#fff' } });
+            }
 
             setSelectedItem(null);
+            fetchCourses(currentPage); // Tải lại dữ liệu sau khi duyệt
+            fetchStats(); // Tải lại thống kê
         } catch (error) {
             console.error(error);
-            toast.error('Duyệt khóa học thất bại 😢');
+            toast.error('Duyệt thất bại 😢');
         }
     };
 
 
     const handleReject = async () => {
         if (!rejectReason) return toast.error("Vui lòng nhập lý do từ chối");
-        // TODO: Call API to reject course using selectedItem.rawId and rejectReason
-        await verifyCourseAprroved(selectedItem.id, 'REJECTED', rejectReason);
-        toast.error(`Đã từ chối: ${selectedItem.title}`);
-        setSelectedItem(null);
+        try {
+            if (selectedItem.status === 'PENDING_UPDATE') {
+                await reviewUpdateRequest(selectedItem.id, 'REJECTED', rejectReason);
+                toast.error(`Từ chối cập nhật: ${selectedItem.title}`);
+            } else if (selectedItem.status === 'PENDING_DELETION') {
+                await reviewDeletionRequest(selectedItem.id, 'REJECTED', rejectReason);
+                toast.error(`Từ chối xóa khóa học: ${selectedItem.title}`);
+            } else {
+                await verifyCourseAprroved(selectedItem.id, 'REJECTED', rejectReason);
+                toast.error(`Đã từ chối: ${selectedItem.title}`);
+            }
+
+            setSelectedItem(null);
+            fetchCourses(currentPage);
+            fetchStats();
+        } catch (error) {
+            console.error(error);
+            toast.error('Gửi yêu cầu sửa thất bại 😢');
+        }
     };
 
     const getTypeIcon = (type) => {
@@ -248,16 +326,16 @@ export default function StaffModeration() {
                     <Shield className="text-indigo-600" size={28} />
                     Cổng Kiểm Duyệt Nội Dung
                 </h1>
-                <p className="text-slate-500 mt-2 font-medium">Xin chào Staff, hiện tại có <span className="text-indigo-600 font-bold">{filteredData.length} nội dung</span> cần xử lý.</p>
+                <p className="text-slate-500 mt-2 font-medium">Xin chào Staff, hiện tại có <span className="text-indigo-600 font-bold">{courseStats.pendingCount} nội dung</span> cần xử lý.</p>
             </div>
 
             {/* --- 2. STATS CARDS --- */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
                 {[
-                    { label: 'Chờ xử lý', val: filteredData.length.toString(), icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
-                    { label: 'Đã duyệt hôm nay', val: '24', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-                    { label: 'Bị từ chối', val: '05', icon: XCircle, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100' },
-                    { label: 'Hiệu suất tuần', val: '98%', icon: CheckSquare, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-100' },
+                    { label: 'Chờ xử lý', val: courseStats.pendingCount.toString(), icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
+                    { label: 'Đã duyệt', val: courseStats.approvedCount.toString(), icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+                    { label: 'Bị từ chối', val: courseStats.rejectedCount.toString(), icon: XCircle, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100' },
+                    { label: 'Tổng nội dung', val: courseStats.totalCount.toString(), icon: HelpCircle, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-100' },
                 ].map((stat, idx) => (
                     <div key={idx} className={`bg-white p-5 rounded-2xl border ${stat.border} shadow-sm hover:shadow-md transition-shadow flex items-center justify-between`}>
                         <div>
@@ -374,6 +452,55 @@ export default function StaffModeration() {
                         </div>
                     )}
                 </div>
+
+                {/* Pagination UI */}
+                {totalPages > 1 && (
+                    <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                        <p className="text-xs text-slate-500 font-medium">
+                            Hiển thị từ <span className="text-slate-700 font-bold">{(currentPage - 1) * pageSize + 1}</span> đến <span className="text-slate-700 font-bold">{Math.min(currentPage * pageSize, totalElements)}</span> trên tổng số <span className="text-slate-700 font-bold">{totalElements}</span>
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <button 
+                                onClick={() => fetchCourses(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            >
+                                <ChevronDown size={18} className="rotate-90" />
+                            </button>
+                            
+                            {[...Array(totalPages)].map((_, i) => {
+                                const pageNum = i + 1;
+                                if (totalPages > 5) {
+                                    if (pageNum !== 1 && pageNum !== totalPages && Math.abs(pageNum - currentPage) > 1) {
+                                        if (Math.abs(pageNum - currentPage) === 2) return <span key={i} className="px-1 text-slate-400">...</span>;
+                                        return null;
+                                    }
+                                }
+                                return (
+                                    <button
+                                        key={i}
+                                        onClick={() => fetchCourses(pageNum)}
+                                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                                            currentPage === pageNum 
+                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                                            : 'text-slate-500 hover:bg-white hover:shadow-sm'
+                                        }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+
+                            <button 
+                                onClick={() => fetchCourses(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            >
+                                <ChevronUp size={18} className="rotate-90" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* --- 4. REVIEW MODAL --- */}
@@ -531,17 +658,50 @@ export default function StaffModeration() {
                                     </div>
                                 </div>
 
-                                {/* Review Checklist */}
+                                {/* Review Checklist / Request Info */}
                                 <div className="flex-1 overflow-y-auto p-5">
-                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Checklist kiểm duyệt</h4>
-                                    <div className="space-y-2">
-                                        {["Chất lượng Video (HD+)", "Âm thanh rõ ràng", "Tài liệu đầy đủ", "Không vi phạm bản quyền", "Giá bán hợp lý"].map((check, i) => (
-                                            <label key={i} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
-                                                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                                                <span className="text-sm text-slate-600 font-medium">{check}</span>
-                                            </label>
-                                        ))}
-                                    </div>
+                                    {(selectedItem.status === 'PENDING_UPDATE' || selectedItem.status === 'PENDING_DELETION') ? (
+                                        <>
+                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Lý do yêu cầu từ Instructor</h4>
+                                            <div className="bg-amber-50 p-4 border border-amber-200 rounded-xl mb-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                                {selectedItem.status === 'PENDING_UPDATE' && (
+                                                    <div className="flex flex-col gap-2">
+                                                        {selectedItem.pendingUpdateNote?.startsWith('REQUEST_UNLOCK: ') && (
+                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold w-fit uppercase">
+                                                                <CheckSquare size={10} /> Yêu cầu mở khóa
+                                                            </span>
+                                                        )}
+                                                        <span>
+                                                            {(selectedItem.pendingUpdateNote?.replace('REQUEST_UNLOCK: ', '') || "Giảng viên không ghi chú thêm.")}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {selectedItem.status === 'PENDING_DELETION' && (selectedItem.deletionRequestNote || "Giảng viên không ghi chú thêm.")}
+                                            </div>
+                                            {selectedItem.status === 'PENDING_UPDATE' && (
+                                                <div className="text-xs text-fuchsia-600 bg-fuchsia-50 p-3 rounded-lg font-medium">
+                                                    💡 Lưu ý: Cập nhật này sẽ thay thế nội dung cũ. Học sinh đã mua vẫn sẽ thấy nội dung mới.
+                                                </div>
+                                            )}
+                                            {selectedItem.status === 'PENDING_DELETION' && (
+                                                <div className="text-xs text-orange-600 bg-orange-50 p-3 rounded-lg font-medium">
+                                                    ⚠️ Lưu ý: Nếu duyệt xóa, khóa học sẽ ở trạng thái ARCHIVED. Học sinh cũ vẫn xem được nhưng học viên mới không thể mua/đăng ký.
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Checklist kiểm duyệt</h4>
+                                            <div className="space-y-2">
+                                                {["Chất lượng Video (HD+)", "Âm thanh rõ ràng", "Tài liệu đầy đủ", "Không vi phạm bản quyền", "Giá bán hợp lý"].map((check, i) => (
+                                                    <label key={i} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                                        <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                                                        <span className="text-sm text-slate-600 font-medium">{check}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
                                 {/* Action Buttons Area */}
@@ -552,13 +712,17 @@ export default function StaffModeration() {
                                                 onClick={handleApprove}
                                                 className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5"
                                             >
-                                                <CheckCircle size={20} /> Duyệt & Xuất bản
+                                                <CheckCircle size={20} /> {
+                                                    selectedItem.status === 'PENDING_UPDATE' 
+                                                        ? (selectedItem.pendingUpdateNote?.startsWith('REQUEST_UNLOCK') ? "Duyệt mở khóa" : "Duyệt bản cập nhật")
+                                                        : selectedItem.status === 'PENDING_DELETION' ? "Cho phép Xóa khóa học" : "Duyệt & Xuất bản"
+                                                }
                                             </button>
                                             <button
                                                 onClick={() => setIsRejecting(true)}
                                                 className="w-full py-3 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                                             >
-                                                <XCircle size={20} /> Từ chối / Yêu cầu sửa
+                                                <XCircle size={20} /> {selectedItem.status === 'PENDING_DELETION' ? "Từ chối Xóa" : "Từ chối / Yêu cầu sửa"}
                                             </button>
                                         </div>
                                     ) : (

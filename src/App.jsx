@@ -13,10 +13,12 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 
 // Public Pages
 import Login from "@/pages/public/Login";
+import Home from "@/pages/public/Home";
 import Register from "@/pages/public/Register";
 import ForgotPassword from "@/pages/public/ForgotPassword";
 import ResetPassword from "@/pages/public/ResetPassword";
 import PaymentResult from "@/pages/PaymentResult";
+import PlacementTest from "@/pages/PlacementTest";
 
 // Student Pages & Layout
 import StudentLayout from "@/layouts/StudentLayout";
@@ -32,6 +34,9 @@ import QuizPage from "@/pages/student/MockTestPage";
 // Instructor Pages & Layout
 import InstructorLayout from "@/layouts/InstructorLayout";
 import InstructorDashboard from "@/pages/instructor/InstructorDashboard";
+import InstructorCourses from "@/pages/instructor/InstructorCourses";
+import InstructorStudents from "@/pages/instructor/InstructorStudents";
+import InstructorAnalytics from "@/pages/instructor/InstructorAnalytics";
 import InstructorProfile from "@/pages/instructor/Profile";
 import ModuleManager from "@/pages/instructor/ModuleManager";
 
@@ -41,11 +46,14 @@ import StaffDashboard from "@/pages/staff/StaffDashboard";
 import StaffModeration from "@/pages/staff/StaffModeration";
 import StaffReports from "@/pages/staff/StaffReports";
 import StaffDiscussions from "@/pages/staff/StaffDiscussions";
+import StaffPlacementDocs from "@/pages/staff/StaffPlacementDocs";
+import StaffProfile from "@/pages/staff/Profile";
 
 // Admin Pages & Layout
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import UserManagement from "@/pages/admin/UserManagement";
+import CourseManagement from "@/pages/admin/CourseManagement";
 
 // Fallback
 const NotFound = () => (
@@ -83,14 +91,17 @@ function App() {
 
           <Routes>
             {/* ================= PUBLIC ROUTES ================= */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            
-            {/* Payment Result (Thường là public hoặc cần login nhưng không cần layout) */}
+
+            {/* Payment Result */}
             <Route path="/payment-result" element={<PaymentResult />} />
+
+            {/* Placement Test - PUBLIC, không cần đăng nhập */}
+            <Route path="/placement-test" element={<PlacementTest />} />
 
             {/* ================= STUDENT ROUTES ================= */}
             <Route
@@ -132,6 +143,9 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<InstructorDashboard />} />
+              <Route path="courses" element={<InstructorCourses />} />
+              <Route path="students" element={<InstructorStudents />} />
+              <Route path="analytics" element={<InstructorAnalytics />} />
               <Route path="profile" element={<InstructorProfile />} />
             </Route>
 
@@ -159,6 +173,8 @@ function App() {
               <Route path="moderation" element={<StaffModeration />} />
               <Route path="discussions" element={<StaffDiscussions />} />
               <Route path="reports" element={<StaffReports />} />
+              <Route path="placement-docs" element={<StaffPlacementDocs />} />
+              <Route path="profile" element={<StaffProfile />} />
             </Route>
 
             {/* ================= ADMIN ROUTES ================= */}
@@ -173,7 +189,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
-              {/* <Route path="courses" element={<CourseManagement />} /> */}
+              <Route path="courses" element={<CourseManagement />} />
             </Route>
 
             {/* ================= CATCH ALL ================= */}

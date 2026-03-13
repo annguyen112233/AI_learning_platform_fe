@@ -21,7 +21,7 @@ const formatDuration = (seconds) => {
 };
 
 // --- COMPONENT CON: Hiển thị từng Chương (Giữ nguyên) ---
-const CourseModule = ({ module, index, defaultOpen = false }) => {
+const CourseModule = ({ module, index, isEnrolled, onLessonClick, defaultOpen = false }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
@@ -46,7 +46,10 @@ const CourseModule = ({ module, index, defaultOpen = false }) => {
                     {module.lessons?.map((lesson, lessonIdx) => (
                         <div
                             key={lesson.id || lessonIdx}
-                            className="flex items-center justify-between p-4 border-b border-slate-50 hover:bg-emerald-50/30 transition-colors group cursor-pointer"
+                            onClick={() => (isEnrolled || lesson.isPreview) && onLessonClick(lesson)}
+                            className={`flex items-center justify-between p-4 border-b border-slate-50 hover:bg-emerald-50/30 transition-colors group ${
+                                (isEnrolled || lesson.isPreview) ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'
+                            }`}
                         >
                             <div className="flex items-center gap-3">
                                 {lesson.type === 'doc' ? (
@@ -54,7 +57,9 @@ const CourseModule = ({ module, index, defaultOpen = false }) => {
                                 ) : (
                                     <PlayCircle size={18} className="text-slate-400 group-hover:text-emerald-600" />
                                 )}
-                                <span className="text-slate-600 text-sm font-medium group-hover:text-slate-900">
+                                <span className={`text-sm font-medium ${
+                                    (isEnrolled || lesson.isPreview) ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400'
+                                }`}>
                                     {lesson.title}
                                 </span>
                             </div>
@@ -63,6 +68,8 @@ const CourseModule = ({ module, index, defaultOpen = false }) => {
                                     <span className="text-[10px] text-emerald-600 font-bold border border-emerald-200 px-2 py-0.5 rounded bg-emerald-50 uppercase tracking-wide">
                                         Học thử
                                     </span>
+                                ) : isEnrolled ? (
+                                    <span className="text-xs text-slate-400">{lesson.duration || "10:00"}</span>
                                 ) : (
                                     <div className="flex items-center gap-1 text-slate-400">
                                         <span className="text-xs">{lesson.duration || "10:00"}</span>
@@ -151,7 +158,7 @@ const [subscription, setSubscription] = useState(null);
                     rejectionReason: apiData.rejectionReason,
                     createdAt: apiData.createdAt,
                     modules: mappedModules,
-                    enrolled: apiData.enrolled || false,
+                    enrolled: apiData.enrolled === true, // strict: chỉ true nếu backend trả về true
                     rating: 0,
                     reviews: 0,
                     students: apiData.students || 0,
@@ -374,6 +381,8 @@ const [subscription, setSubscription] = useState(null);
                                         key={module.id || index}
                                         module={module}
                                         index={index}
+                                        isEnrolled={course.enrolled}
+                                        onLessonClick={() => navigate(`/student/learning/${course.id}`)}
                                         defaultOpen={index === 0}
                                     />
                                 ))
@@ -415,10 +424,10 @@ const [subscription, setSubscription] = useState(null);
                             <div className="space-y-3">
                                 {course.enrolled ? (
                                     <button
-                                        disabled
-                                        className="w-full py-3.5 rounded-xl font-bold text-white bg-slate-400 cursor-not-allowed flex items-center justify-center gap-2"
+                                        onClick={() => navigate(`/student/learning/${id}`)}
+                                        className="w-full py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"
                                     >
-                                        ✔ Đã đăng ký
+                                        <PlayCircle size={18} /> VÀO HỌC NGAY
                                     </button>
                                 ) : (
                                     <button

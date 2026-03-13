@@ -2,15 +2,39 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Plus, MessageSquare, MoreHorizontal, Image, Mic, 
   Sparkles, History, Settings, Volume2, Copy, ThumbsUp, 
-  ThumbsDown, RefreshCw, X, ChevronRight, Zap
+  ThumbsDown, RefreshCw, X, ChevronRight, Zap, Bot, Loader2
 } from 'lucide-react';
+import { askSenseiAI } from '@/services/chatService';
+
+// --- COMPONENT: RENDER TEXT VỚI MARKDOWN ĐƠN GIẢN ---
+const renderText = (text) => {
+  // Bold: **text**
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="text-white font-bold">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={i} className="bg-slate-700 px-1.5 py-0.5 rounded text-emerald-300 text-sm font-mono">{part.slice(1, -1)}</code>;
+    }
+    return part;
+  });
+};
 
 // --- COMPONENT: TIN NHẮN (MESSAGE BUBBLE) ---
 const ChatMessage = ({ message }) => {
   const isAI = message.sender === 'ai';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
-    <div className={`group w-full text-slate-200 border-b border-black/5 ${isAI ? 'bg-transparent' : 'bg-transparent'}`}>
+    <div className={`group w-full text-slate-200 border-b border-black/5`}>
       <div className="max-w-3xl mx-auto px-4 py-8 flex gap-6">
         
         {/* Avatar */}
@@ -26,31 +50,23 @@ const ChatMessage = ({ message }) => {
 
         {/* Content */}
         <div className="relative flex-1 overflow-hidden">
-          {/* Sender Name */}
           <div className="font-bold text-sm mb-1 opacity-90">
              {isAI ? 'Sensei AI' : 'Bạn'}
           </div>
 
-          {/* Text Body */}
-          <div className="prose prose-invert prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:border prose-pre:border-slate-700 max-w-none text-[15px] text-slate-300">
+          {/* Text Body - Render markdown đơn giản */}
+          <div className="prose prose-invert prose-p:leading-relaxed max-w-none text-[15px] text-slate-300">
              {message.text.split('\n').map((line, i) => (
-                <p key={i} className="mb-2 last:mb-0">{line}</p>
+                <p key={i} className="mb-2 last:mb-0">{renderText(line)}</p>
              ))}
           </div>
 
-          {/* AI Action Bar (Chỉ hiện khi hover hoặc trên mobile) */}
+          {/* AI Action Bar */}
           {isAI && (
             <div className="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-               <button className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-md transition-colors" title="Nghe phát âm">
-                  <Volume2 size={16} />
+               <button onClick={handleCopy} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors" title="Sao chép">
+                  {copied ? <span className="text-emerald-400 text-xs font-bold">✓</span> : <Copy size={16} />}
                </button>
-               <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors" title="Sao chép">
-                  <Copy size={16} />
-               </button>
-               <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors" title="Tạo lại câu trả lời">
-                  <RefreshCw size={16} />
-               </button>
-               <div className="h-4 w-[1px] bg-slate-700 mx-1"></div>
                <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors">
                   <ThumbsUp size={16} />
                </button>
@@ -69,28 +85,17 @@ const ChatMessage = ({ message }) => {
 export default function AIChatPage() {
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
-  // Mock Conversations History
-  const history = [
-    { id: 1, title: 'Luyện tập Hiragana hàng A', date: 'Hôm nay' },
-    { id: 2, title: 'Giải thích ngữ pháp wa/ga', date: 'Hôm qua' },
-    { id: 3, title: 'Cách đếm số trong tiếng Nhật', date: '7 ngày trước' },
-  ];
-
-  // Mock Active Chat Messages
-  const [messages, setMessages] = useState([
-    { 
-      id: 1, 
-      sender: 'user', 
-      text: 'Giải thích giúp mình sự khác nhau giữa "Konnichiwa" và "Konbanwa" với?' 
-    },
-    { 
-      id: 2, 
-      sender: 'ai', 
-      text: 'Chào bạn! Đây là sự khác biệt cơ bản giữa hai câu chào này:\n\n1. **Konnichiwa (こんにちは):**\n- Nghĩa là: "Xin chào" hoặc "Chào buổi trưa/chiều".\n- Sử dụng: Thường dùng từ khoảng 10:00 sáng đến trước khi trời tối (khoảng 17:00 - 18:00).\n\n2. **Konbanwa (こんばんは):**\n- Nghĩa là: "Chào buổi tối".\n- Sử dụng: Dùng sau khi trời đã tối hẳn (sau 18:00).\n\n💡 **Mẹo nhỏ:** Bạn có thể nhớ "Konbanwa" dùng cho lúc "Ban đêm".' 
-    }
+  // Chat history sidebar (local)
+  const [history, setHistory] = useState([
+    { id: 1, title: 'Giải thích ngữ pháp wa/ga' },
+    { id: 2, title: 'Cách đếm số trong tiếng Nhật' },
   ]);
+
+  const [messages, setMessages] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -100,13 +105,47 @@ export default function AIChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: input }]);
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 180) + 'px';
+    }
+  }, [input]);
+
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    const question = input.trim();
+    if (!question || isLoading) return;
+
+    // Thêm user message
+    const userMsg = { id: Date.now(), sender: 'user', text: question };
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
-    // Simulate AI thinking...
+    setIsLoading(true);
+
+    // Cập nhật history sidebar
+    if (messages.length === 0) {
+      setHistory(prev => [{ id: Date.now(), title: question.slice(0, 40) }, ...prev]);
+    }
+
+    try {
+      const res = await askSenseiAI(question);
+      const answer = res.data?.data?.answer || 'Sensei AI không trả lời được câu hỏi này.';
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: answer }]);
+    } catch (err) {
+      const errMsg = err.response?.data?.message || 'Xin lỗi, Sensei AI đang gặp sự cố. Thử lại sau nhé! 🙏';
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: errMsg }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleSuggest = (text) => {
+    setInput(text);
+    textareaRef.current?.focus();
+  };
+
 
   return (
     <div className="flex h-screen bg-[#0F172A] text-slate-200 font-sans overflow-hidden">
@@ -176,7 +215,7 @@ export default function AIChatPage() {
         </header>
 
         {/* Messages Scroll Area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar-dark pb-32">
+        <div className="flex-1 overflow-y-auto custom-scrollbar-dark pb-36">
            {messages.length === 0 ? (
               // EMPTY STATE
               <div className="h-full flex flex-col items-center justify-center px-4">
@@ -184,16 +223,16 @@ export default function AIChatPage() {
                     <Sparkles size={40} className="text-emerald-500 animate-pulse"/>
                  </div>
                  <h2 className="text-2xl font-bold text-white mb-2">Sensei AI có thể giúp gì?</h2>
-                 <p className="text-slate-400 text-center max-w-md mb-8">Tôi có thể giúp bạn luyện hội thoại, sửa lỗi ngữ pháp, hoặc giải thích văn hóa Nhật Bản.</p>
+                 <p className="text-slate-400 text-center max-w-md mb-8">Tôi trả lời dựa trên nội dung khóa học bạn đang học. Hãy hỏi về từ vựng, ngữ pháp, văn hóa Nhật Bản!</p>
                  
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full">
                     {[
-                        { title: 'Luyện hội thoại', desc: 'Đóng vai nhân viên cửa hàng tiện lợi' },
-                        { title: 'Kiểm tra ngữ pháp', desc: 'Sửa lỗi câu văn tiếng Nhật của tôi' },
-                        { title: 'Giải thích từ vựng', desc: 'Sự khác nhau giữa Kore, Sore, Are' },
-                        { title: 'Văn hóa', desc: 'Quy tắc ứng xử khi đi tàu điện' },
+                        { title: '📖 Giải thích từ vựng', desc: 'Sự khác nhau giữa は và が', action: 'Giải thích sự khác nhau giữa は (wa) và が (ga) trong tiếng Nhật' },
+                        { title: '✍️ Kiểm tra ngữ pháp', desc: 'Sửa câu tiếng Nhật của tôi', action: 'Hãy giải thích cách dùng て form trong tiếng Nhật và cho ví dụ' },
+                        { title: '🎌 Văn hóa Nhật Bản', desc: 'Quy tắc xã giao khi đi làm', action: 'Giải thích về keigo (kính ngữ) trong tiếng Nhật và khi nào nên dùng' },
+                        { title: '📝 Hỏi về bài học', desc: 'Nội dung trong khóa học của tôi', action: 'Tóm tắt những gì tôi đã học trong khóa học của mình' },
                     ].map((item, idx) => (
-                        <button key={idx} className="text-left p-4 rounded-xl border border-slate-700 bg-slate-800/30 hover:bg-slate-800 hover:border-emerald-500/50 transition-all group">
+                        <button key={idx} onClick={() => handleSuggest(item.action)} className="text-left p-4 rounded-xl border border-slate-700 bg-slate-800/30 hover:bg-slate-800 hover:border-emerald-500/50 transition-all group">
                             <div className="font-bold text-sm text-slate-200 group-hover:text-emerald-400 mb-1">{item.title}</div>
                             <div className="text-xs text-slate-500">{item.desc}</div>
                         </button>
@@ -206,6 +245,25 @@ export default function AIChatPage() {
                  {messages.map(msg => (
                     <ChatMessage key={msg.id} message={msg} />
                  ))}
+
+                 {/* Typing Indicator */}
+                 {isLoading && (
+                   <div className="w-full border-b border-black/5">
+                     <div className="max-w-3xl mx-auto px-4 py-8 flex gap-6">
+                       <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-[0_0_15px_rgba(5,150,105,0.4)] shrink-0">
+                         <Sparkles size={16} className="text-white" />
+                       </div>
+                       <div className="flex-1">
+                         <div className="font-bold text-sm mb-3 opacity-90">Sensei AI</div>
+                         <div className="flex items-center gap-1.5">
+                           <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                           <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                           <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                 )}
                  <div ref={messagesEndRef} className="h-4"/>
               </div>
            )}
@@ -214,15 +272,15 @@ export default function AIChatPage() {
         {/* Input Area (Fixed Bottom) */}
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#0F172A] via-[#0F172A] to-transparent">
            <div className="max-w-3xl mx-auto">
-              {/* Suggestion Chips (Optional) */}
-              {messages.length > 0 && (
+              {/* Quick Suggestion Chips */}
+              {messages.length > 0 && !isLoading && (
                   <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar mb-1">
-                      <button className="whitespace-nowrap px-4 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
-                         Cách dùng khác?
-                      </button>
-                      <button className="whitespace-nowrap px-4 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
-                         Cho ví dụ câu
-                      </button>
+                      {['Cho ví dụ câu', 'Giải thích thêm', 'Cách dùng khác?', 'Cho bài tập'].map(chip => (
+                        <button key={chip} onClick={() => handleSuggest(chip)}
+                          className="whitespace-nowrap px-4 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                          {chip}
+                        </button>
+                      ))}
                   </div>
               )}
 
@@ -230,6 +288,7 @@ export default function AIChatPage() {
               <div className="relative bg-[#1E293B] rounded-2xl border border-slate-600 shadow-2xl focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500 transition-all">
                  <form onSubmit={handleSend} className="flex flex-col">
                     <textarea 
+                       ref={textareaRef}
                        value={input}
                        onChange={(e) => setInput(e.target.value)}
                        onKeyDown={(e) => {
@@ -238,8 +297,9 @@ export default function AIChatPage() {
                                handleSend(e);
                            }
                        }}
-                       placeholder="Nhắn tin cho Sensei..."
-                       className="w-full bg-transparent text-slate-200 placeholder-slate-500 px-4 py-4 max-h-48 resize-none focus:outline-none text-[15px] leading-relaxed"
+                       placeholder={isLoading ? 'Sensei AI đang suy nghĩ...' : 'Nhắn tin cho Sensei...'}
+                       disabled={isLoading}
+                       className="w-full bg-transparent text-slate-200 placeholder-slate-500 px-4 py-4 max-h-48 resize-none focus:outline-none text-[15px] leading-relaxed disabled:opacity-50"
                        rows={1}
                        style={{ minHeight: '56px' }}
                     />
@@ -247,32 +307,34 @@ export default function AIChatPage() {
                     {/* Toolbar */}
                     <div className="flex items-center justify-between px-2 pb-2">
                        <div className="flex items-center gap-1">
-                          <button type="button" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Đính kèm ảnh">
+                          <button type="button" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
                              <Plus size={20}/>
                           </button>
-                          <button type="button" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Tìm trên web">
+                          <button type="button" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
                              <Image size={20}/>
                           </button>
-                          <button type="button" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Micro">
+                          <button type="button" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
                              <Mic size={20}/>
                           </button>
                        </div>
                        
                        <button 
                           type="submit" 
-                          disabled={!input.trim()}
+                          disabled={!input.trim() || isLoading}
                           className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center
-                             ${input.trim() 
+                             ${(input.trim() && !isLoading)
                                ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-500' 
                                : 'bg-slate-700 text-slate-500 cursor-not-allowed'}
                           `}
                        >
-                          <Send size={18} />
+                          {isLoading 
+                            ? <Loader2 size={18} className="animate-spin" />
+                            : <Send size={18} />}
                        </button>
                     </div>
                  </form>
               </div>
-              <p className="text-center text-[10px] text-slate-500 mt-3 font-medium">Sensei AI có thể mắc lỗi. Hãy kiểm tra lại thông tin quan trọng.</p>
+              <p className="text-center text-[10px] text-slate-500 mt-3 font-medium">Sensei AI trả lời dựa trên nội dung khóa học của bạn. Có thể mắc lỗi.</p>
            </div>
         </div>
 

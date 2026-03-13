@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Mail, Lock, BookOpen, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '@/services/authService';
 import { jwtDecode } from 'jwt-decode';
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { getProfile } from '@/services/userService';
 
 
@@ -17,6 +18,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { setUser } = useAuth();
+  const { fetchSubscription } = useSubscription();
 
 
   const handleLogin = async (e) => {
@@ -30,9 +32,14 @@ export default function Login() {
 
       const accessToken = data.accessToken;
 
-      // ✅ CHỈ lưu access token
+      // ✅ Lưu access token
       sessionStorage.setItem('accessToken', accessToken);
-      const profileRes = await getProfile();
+
+      // ✅ Load profile & subscription song song
+      const [profileRes] = await Promise.all([
+        getProfile(),
+        fetchSubscription(),
+      ]);
       console.log('Profile:', profileRes);
       setUser(profileRes.data.data);
 

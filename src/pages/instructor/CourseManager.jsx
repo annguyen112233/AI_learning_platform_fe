@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,10 +14,15 @@ import {
   List,
   Send, // ✅ NEW
   AlertCircle, // ✅ NEW
+  Trash2, // ✅ NEW
+  UploadCloud, // ✅ NEW
 } from "lucide-react";
 import {
   getCoursesByInstructor,
   submitCourseForApproval,
+  submitUpdateRequest,
+  requestCourseDeletion,
+  requestUnlock, // Added
 } from "../../services/courseService"; // ✅ IMPORT
 import { getModulesByCourse } from "../../services/moduleService";
 import api from "../../services/api";
@@ -31,6 +36,10 @@ export default function CourseManager({ reloadKey }) {
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(null); // ✅ NEW
+
+  // Modal actions
+  const [showActionModal, setShowActionModal] = useState({ show: false, type: "", course: null });
+  const [actionNote, setActionNote] = useState("");
 
   /* ================= FETCH COURSES ================= */
   const fetchCourses = async () => {
@@ -119,6 +128,7 @@ export default function CourseManager({ reloadKey }) {
       state: {
         courseId: course.courseId,
         courseName: course.title,
+        courseStatus: course.status, // ✅ ADD THIS
         moduleName: module.title,
         moduleData: module,
       },
@@ -180,6 +190,67 @@ export default function CourseManager({ reloadKey }) {
       setSubmitting(null);
     }
   };
+
+  /* ================= ✅ SUBMIT UPDATE & DELETION REQUEST ================= */
+  const handleActionSubmit = async () => {
+    const { type, course } = showActionModal;
+    if (!course) return;
+
+    if (type === "UPDATE" && !actionNote.trim()) {
+      alert("⚠️ Vui lòng nhập chi tiết cập nhật để staff dễ kiểm duyệt.");
+      return;
+    }
+    if (type === "DELETE" && !actionNote.trim()) {
+      alert("⚠️ Vui lòng cho biết lý do bạn muốn xóa khóa học này.");
+      return;
+    }
+
+    try {
+      setSubmitting(course.courseId);
+      let response;
+      if (type === "UPDATE") {
+        if (course.status === "APPROVED") {
+          response = await requestUnlock(course.courseId, actionNote);
+        } else {
+          response = await submitUpdateRequest(course.courseId, actionNote);
+        }
+      } else {
+        response = await requestCourseDeletion(course.courseId, actionNote);
+      }
+
+      const updatedCourse = response.data.data;
+      setCourses((prevCourses) =>
+        prevCourses.map((c) => (c.courseId === course.courseId ? updatedCourse : c))
+      );
+
+      alert(type === "UPDATE" ? "✅ Đã gửi yêu cầu duyệt cập nhật!" : "✅ Đã gửi yêu cầu xóa khóa học!");
+      setShowActionModal({ show: false, type: "", course: null });
+      setActionNote("");
+    } catch (error) {
+      console.error("Failed to submit action", error);
+      const errorMsg = error.response?.data?.message || "Không thể thực hiện yêu cầu. Vui lòng thử lại!";
+      alert("❌ " + errorMsg);
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  /* ================= RENDER HELPERS ================= */
+  const getActionModalConfig = () => {
+    const { type, course } = showActionModal;
+    if (!course) return { focusClass: "", placeholder: "", noteLabel: "" };
+
+    const isApproveEditRequest = course.status === "APPROVED";
+    
+    return {
+      focusClass: isApproveEditRequest ? "focus:ring-blue-500/20 focus:border-blue-500" : "focus:ring-fuchsia-500/20 focus:border-fuchsia-500",
+      placeholder: isApproveEditRequest ? "Vd: Cập nhật thêm kiến thức mới cho năm 2024..." : "Vd: Thêm module 4 về Kanji, cập nhật bài học số 2...",
+      noteLabel: isApproveEditRequest ? "Lý do yêu cầu mở khóa (bắt buộc)*" : "Ghi chú cập nhật (bắt buộc)*",
+      baseClass: "w-full border border-slate-300 rounded-xl p-3 outline-none focus:ring-2 transition-all resize-none min-h-[100px] "
+    };
+  };
+
+  const modalConfig = getActionModalConfig();
 
   /* ================= EFFECT ================= */
   useEffect(() => {
@@ -270,9 +341,17 @@ export default function CourseManager({ reloadKey }) {
                               ? "bg-blue-100/90 text-blue-700"
                               : isRejected
                                 ? "bg-red-100/90 text-red-700"
-                                : isDraft
-                                  ? "bg-amber-100/90 text-amber-700"
-                                  : "bg-slate-100/90 text-slate-600"
+                                : course.status === "EDITING"
+                                  ? "bg-violet-100/90 text-violet-700"
+                                  : course.status === "PENDING_UPDATE"
+                                    ? "bg-fuchsia-100/90 text-fuchsia-700"
+                                  : course.status === "PENDING_DELETION"
+                                    ? "bg-orange-100/90 text-orange-700"
+                                    : course.status === "ARCHIVED"
+                                      ? "bg-slate-300/90 text-slate-700"
+                                      : isDraft
+                                        ? "bg-amber-100/90 text-amber-700"
+                                        : "bg-slate-100/90 text-slate-600"
                         }`}
                       >
                         {isApproved
@@ -281,9 +360,17 @@ export default function CourseManager({ reloadKey }) {
                             ? "Chờ duyệt"
                             : isRejected
                               ? "Từ chối"
-                              : isDraft
-                                ? "Bản nháp"
-                                : course.status}
+                              : course.status === "EDITING"
+                                ? "Đang chỉnh sửa"
+                              : course.status === "PENDING_UPDATE"
+                                ? "Chờ duyệt cập nhật"
+                                : course.status === "PENDING_DELETION"
+                                  ? "Chờ duyệt xóa"
+                                  : course.status === "ARCHIVED"
+                                    ? "Đã lưu trữ"
+                                    : isDraft
+                                      ? "Bản nháp"
+                                      : course.status}
                       </span>
                     </div>
                   </div>
@@ -360,9 +447,9 @@ export default function CourseManager({ reloadKey }) {
 
                     <button
                       onClick={() => handleToggleCreateModule(course.courseId)}
-                      disabled={isPending || isApproved}
+                      disabled={isPending}
                       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
-                        isPending || isApproved
+                        isPending
                           ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                           : "border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
                       }`}
@@ -412,12 +499,44 @@ export default function CourseManager({ reloadKey }) {
                     )}
 
                     {/* ✅ Pending status indicator */}
-                    {isPending && (
+                    {(isPending || course.status === "PENDING_UPDATE" || course.status === "PENDING_DELETION") && (
                       <div className="text-center py-2.5 px-4 bg-blue-50 border border-blue-200 rounded-xl">
-                        <p className="text-sm text-blue-700 font-medium">
-                          ⏳ Đang chờ staff xét duyệt
+                        <p className="text-sm text-blue-700 font-medium whitespace-break-spaces">
+                          ⏳ {course.status === "PENDING_UPDATE" 
+                               ? (course.pendingUpdateNote?.startsWith("REQUEST_UNLOCK") ? "Đang chờ Staff mở khóa để sửa" : "Đang chờ duyệt nội dung mới") 
+                               : course.status === "PENDING_DELETION" ? "Đang chờ duyệt xóa khóa học" : "Đang chờ staff xét duyệt"}
                         </p>
                       </div>
+                    )}
+
+                    {/* ✅ Additional options for APPROVED/EDITING courses */}
+                    {(isApproved || course.status === "EDITING") && (
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                            <button
+                                onClick={() => {
+                                  setShowActionModal({ show: true, type: "UPDATE", course });
+                                  setActionNote("");
+                                }}
+                                disabled={isSubmittingThis}
+                                className="col-span-1 flex flex-col items-center justify-center p-2 rounded-lg bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 hover:bg-fuchsia-100 transition-colors"
+                            >
+                                <UploadCloud size={16} className="mb-1" />
+                                <span className="text-xs font-semibold text-center leading-tight">
+                                  {isApproved ? "Yêu cầu\nmở khóa" : "Gửi duyệt\nnội dung"}
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                  setShowActionModal({ show: true, type: "DELETE", course });
+                                  setActionNote("");
+                                }}
+                                disabled={isSubmittingThis}
+                                className="col-span-1 flex flex-col items-center justify-center p-2 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors"
+                            >
+                                <Trash2 size={16} className="mb-1" />
+                                <span className="text-xs font-semibold text-center leading-tight">Yêu cầu<br/>xóa khóa học</span>
+                            </button>
+                        </div>
                     )}
                   </div>
                 </div>
@@ -463,17 +582,33 @@ export default function CourseManager({ reloadKey }) {
                                   <div
                                     key={moduleId}
                                     onClick={() => handleModuleClick(m, course)}
-                                    className="group bg-white border-2 border-slate-200 rounded-xl p-4 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md transition-all cursor-pointer"
+                                    className={`group bg-white border-2 rounded-xl p-4 transition-all cursor-pointer ${
+                                      m.isPendingDeletion 
+                                        ? "border-rose-200 bg-rose-50/50 opacity-70 grayscale"
+                                        : "border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md"
+                                    }`}
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-emerald-100 group-hover:bg-emerald-200 rounded-lg flex items-center justify-center text-emerald-700 font-bold transition-colors">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold transition-colors ${
+                                          m.isPendingDeletion ? "bg-rose-100 text-rose-700" : "bg-emerald-100 group-hover:bg-emerald-200 text-emerald-700"
+                                        }`}>
                                           {m.orderIndex}
                                         </div>
                                         <div>
-                                          <h4 className="font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">
-                                            {m.title}
-                                          </h4>
+                                          <div className="flex items-center gap-2">
+                                            <h4 className={`font-semibold transition-colors ${
+                                              m.isPendingDeletion ? "text-rose-800 line-through" : "text-slate-800 group-hover:text-emerald-700"
+                                            }`}>
+                                              {m.title}
+                                            </h4>
+                                            {m.isPending && (
+                                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full uppercase">Mới</span>
+                                            )}
+                                            {m.isPendingDeletion && (
+                                              <span className="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-full uppercase">Xóa chờ duyệt</span>
+                                            )}
+                                          </div>
                                           {lessonCount > 0 && (
                                             <p className="text-xs text-slate-500 mt-0.5">
                                               {lessonCount} bài học
@@ -557,6 +692,74 @@ export default function CourseManager({ reloadKey }) {
           })}
         </div>
       )}
+
+      {/* ================= ACTION MODAL (UPDATE/DELETE) ================= */}
+      {showActionModal.show && createPortal(
+          <div className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className={`px-6 py-4 flex items-center justify-between ${showActionModal.type === "UPDATE" ? "bg-fuchsia-600" : "bg-rose-600"}`}>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        {showActionModal.type === "UPDATE" ? <UploadCloud size={20} /> : <Trash2 size={20} />}
+                        {showActionModal.type === "UPDATE" ? "Gửi duyệt cập nhật khóa học" : "Yêu cầu xóa khóa học"}
+                    </h3>
+                    <button onClick={() => setShowActionModal({ show: false, type: "", course: null })} className="text-white/80 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+                
+                <div className="p-6 space-y-4 text-slate-600 text-sm">
+                    {showActionModal.type === "UPDATE" ? (
+                        <>
+                            <p>Khóa học: <span className="font-bold text-slate-800">{showActionModal.course?.title}</span></p>
+                            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-800 text-xs leading-relaxed">
+                                {showActionModal.course?.status === "APPROVED" ? (
+                                  <><strong>Lưu ý:</strong> Khóa học đang hiển thị cho học viên. Bạn cần Staff duyệt để "Mở khóa", sau đó mới có thể thêm/sửa/xóa nội dung.</>
+                                ) : (
+                                  <><strong>Lưu ý:</strong> Nội dung bạn vừa sửa đổi sẽ không hiển thị ngay cho học viên. Staff cần được kiểm duyệt những thay đổi này. Khóa học sẽ chuyển sang trạng thái <strong>PENDING_UPDATE</strong> nhưng học sinh cũ vẫn có thể học bình thường (với nội dung cũ) đến khi duyệt xong.</>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                  {modalConfig.noteLabel}
+                                </label>
+                                <textarea 
+                                    className={modalConfig.baseClass + modalConfig.focusClass}
+                                    placeholder={modalConfig.placeholder}
+                                    value={actionNote}
+                                    onChange={(e) => setActionNote(e.target.value)}
+                                ></textarea>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <p>Khóa học: <span className="font-bold text-slate-800">{showActionModal.course?.title}</span></p>
+                            <div className="bg-rose-50 p-3 rounded-lg border border-rose-200 text-rose-800 text-xs leading-relaxed">
+                                <strong>Lưu ý:</strong> Xóa khóa học sẽ đưa khóa học này vào trạng thái lưu trữ (ARCHIVED). Khóa học sẽ không hiển thị với người dùng đăng ký mới, nhưng <strong>những học sinh đã mua/đăng ký vẫn có thể tiếp tục học</strong>.
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Lý do xóa (bắt buộc)*</label>
+                                <textarea 
+                                    className="w-full border border-slate-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none min-h-[100px]"
+                                    placeholder="Vd: Khóa học đã quá cũ, không còn cập nhật..."
+                                    value={actionNote}
+                                    onChange={e => setActionNote(e.target.value)}
+                                ></textarea>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="pt-2 flex items-center justify-end gap-3">
+                        <button onClick={() => setShowActionModal({ show: false, type: "", course: null })} className="px-5 py-2.5 rounded-xl text-slate-500 font-semibold hover:bg-slate-100 transition-colors">Hủy</button>
+                        <button onClick={handleActionSubmit} disabled={!actionNote.trim() || submitting} className={`px-5 py-2.5 rounded-xl text-white font-bold transition-all shadow-sm flex items-center gap-2 ${showActionModal.type === "UPDATE" ? "bg-fuchsia-600 hover:bg-fuchsia-700 disabled:bg-fuchsia-300" : "bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300"}`}>
+                            {submitting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send size={16} />} 
+                            Gửi yêu cầu
+                        </button>
+                    </div>
+                </div>
+            </div>
+          </div>
+      , document.body)}
+
     </div>
   );
 }
