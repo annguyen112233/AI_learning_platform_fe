@@ -1,0 +1,14 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Viền ngoài xanh đậm -->
+  <rect x="8" y="8" width="496" height="496" rx="64" ry="64" fill="#2f6fa3"></rect>
+
+  <!-- Nền xanh nước biển nhạt -->
+  <rect x="28" y="28" width="456" height="456" rx="52" ry="52" fill="#b7ddf3"></rect>
+
+  <!-- Chữ APOC -->
+  <text x="256" y="290" text-anchor="middle" fill="#1f4f7a" font-size="160" font-weight="700" font-family="Segoe UI, Roboto, Arial, sans-serif" letter-spacing="6">
+    APOC
+  </text>
+
+</svg>

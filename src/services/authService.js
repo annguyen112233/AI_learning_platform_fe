@@ -1,7 +1,7 @@
 import api from './api';
 
 export const sendOtp = (email) => {
-  return api.post("/accounts/send-otp", {
+  return api.post("/auth/send-otp", {
     email: email
   });
 };
@@ -11,9 +11,29 @@ export const register = (data) => {
   return api.post(`/accounts`, data);
 };
 
-export const login = (email, password) => {
-  return api.post('/auth/login', {
+export const login = async (email, password) => {
+  const res = await api.post('/auth/login', {
     email,
     password,
   });
+
+  // ✅ Không lưu ở đây vì Login.jsx tự xử lý đúng path (res.data.data.accessToken)
+  return res;
 };
+export const logout = async () => {
+  await api.post('/auth/logout', {}, { withCredentials: true });
+};
+
+export const forgotPassword = (email) => {
+  return api.post('/accounts/forgot-password', null, {
+    params: { email },
+  });
+};
+
+export const resetPassword = (token, newPassword) => {
+  return api.post('/accounts/reset-password', {
+    token,
+    newPassword,
+  });
+}
+
