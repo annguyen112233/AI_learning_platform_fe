@@ -190,7 +190,11 @@ export default function StudentProfile() {
     phoneNumber: "",
     address: "",
     gender: "",
-    birthOfDate: ""
+    birthOfDate: "",
+    studyTimeHours: 0,
+    completedLessonsCount: 0,
+    handledCoursesCount: 0,
+    pendingModerationCount: 0
   });
 
   // --- LOGIC PASSWORD ---
@@ -231,6 +235,10 @@ export default function StudentProfile() {
         address: data.address || "",
         gender: data.gender || "",
         birthOfDate: data.birthOfDate || "",
+        studyTimeHours: data.studyTimeHours || 0,
+        completedLessonsCount: data.completedLessonsCount || 0,
+        handledCoursesCount: data.handledCoursesCount || 0,
+        pendingModerationCount: data.pendingModerationCount || 0,
       };
       setUser(mappedUser);
       setFormData((prev) => ({ ...prev, ...mappedUser }));
@@ -439,23 +447,47 @@ export default function StudentProfile() {
           {/* Mini Stats */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Award size={18} className="text-orange-500" /> Thống kê học tập
+              <Award size={18} className="text-orange-500" /> 
+              {formData.role === 'STAFF' ? 'Hoạt động công việc' : 'Thống kê học tập'}
             </h3>
             <div className="space-y-4">
-              <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Clock size={16} /></div>
-                  <span className="text-sm font-medium text-slate-600">Thời gian học</span>
-                </div>
-                <span className="font-bold text-slate-800">24.5h</span>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><Check size={16} /></div>
-                  <span className="text-sm font-medium text-slate-600">Bài hoàn thành</span>
-                </div>
-                <span className="font-bold text-slate-800">12</span>
-              </div>
+              {formData.role === 'STAFF' ? (
+                <>
+                  <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><Check size={16} /></div>
+                      <span className="text-sm font-medium text-slate-600">Duyệt khóa học</span>
+                    </div>
+                    <span className="font-bold text-slate-800">{formData.handledCoursesCount}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Clock size={16} /></div>
+                      <span className="text-sm font-medium text-slate-600">Đang xử lý</span>
+                    </div>
+                    <span className="font-bold text-slate-800">
+                      {String(formData.pendingModerationCount).padStart(2, '0')}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Clock size={16} /></div>
+                      <span className="text-sm font-medium text-slate-600">Thời gian học</span>
+                    </div>
+                    <span className="font-bold text-slate-800">{formData.studyTimeHours}h</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><Check size={16} /></div>
+                      <span className="text-sm font-medium text-slate-600">Bài hoàn thành</span>
+                    </div>
+                    <span className="font-bold text-slate-800">{formData.completedLessonsCount}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

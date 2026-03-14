@@ -144,6 +144,9 @@ export default function InstructorProfile() {
     address: "",
     gender: "",
     birthOfDate: "",
+    createdCoursesCount: 0,
+    totalStudentsCount: 0,
+    totalRevenue: 0,
   });
 
   // --- LOGIC PASSWORD ---
@@ -418,6 +421,9 @@ export default function InstructorProfile() {
         address: data.address || "",
         gender: data.gender || "",
         birthOfDate: data.birthOfDate || "",
+        createdCoursesCount: data.createdCoursesCount || 0,
+        totalStudentsCount: data.totalStudentsCount || 0,
+        totalRevenue: data.totalRevenue || 0,
       };
       setUser(mappedUser);
       setFormData((prev) => ({ ...prev, ...mappedUser }));
@@ -658,7 +664,7 @@ export default function InstructorProfile() {
                     Khóa học
                   </span>
                 </div>
-                <span className="font-bold text-slate-800">12</span>
+                <span className="font-bold text-slate-800">{formData.createdCoursesCount}</span>
               </div>
               <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -669,7 +675,7 @@ export default function InstructorProfile() {
                     Học viên
                   </span>
                 </div>
-                <span className="font-bold text-slate-800">284</span>
+                <span className="font-bold text-slate-800">{formData.totalStudentsCount}</span>
               </div>
               <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -680,7 +686,9 @@ export default function InstructorProfile() {
                     Doanh thu
                   </span>
                 </div>
-                <span className="font-bold text-slate-800">45M đ</span>
+                <span className="font-bold text-slate-800 text-sm">
+                   {formData.totalRevenue ? formData.totalRevenue.toLocaleString('vi-VN') + ' đ' : '0 đ'}
+                </span>
               </div>
             </div>
           </div>
