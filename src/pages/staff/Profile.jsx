@@ -34,7 +34,9 @@ export default function StaffProfile() {
     phoneNumber: "",
     address: "",
     gender: "",
-    birthOfDate: ""
+    birthOfDate: "",
+    handledCoursesCount: 0,
+    pendingModerationCount: 0
   });
 
   // --- LOGIC PASSWORD ---
@@ -74,6 +76,8 @@ export default function StaffProfile() {
         address: data.address || "",
         gender: data.gender || "",
         birthOfDate: data.birthOfDate || "",
+        handledCoursesCount: data.handledCoursesCount || 0,
+        pendingModerationCount: data.pendingModerationCount || 0,
       };
       setUser(mappedUser);
       setFormData((prev) => ({ ...prev, ...mappedUser, currentPassword: '', newPassword: '', confirmPassword: '' }));
@@ -258,14 +262,16 @@ export default function StaffProfile() {
                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Check size={16}/></div>
                      <span className="text-sm font-medium text-slate-600">Duyệt khóa học</span>
                   </div>
-                  <span className="font-bold text-slate-800">128</span>
+                   <span className="font-bold text-slate-800">{formData.handledCoursesCount}</span>
                </div>
                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                   <div className="flex items-center gap-3">
                      <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><Clock size={16}/></div>
                      <span className="text-sm font-medium text-slate-600">Đang xử lý</span>
                   </div>
-                  <span className="font-bold text-slate-800">05</span>
+                   <span className="font-bold text-slate-800">
+                      {String(formData.pendingModerationCount).padStart(2, '0')}
+                   </span>
                </div>
             </div>
           </div>
