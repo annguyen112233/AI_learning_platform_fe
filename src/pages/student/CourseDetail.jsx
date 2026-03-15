@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Clock, BookOpen, Star, User, ArrowLeft,
     PlayCircle, Share2, Heart, AlertTriangle, Calendar, Info,
-    ChevronDown, ChevronUp, FileText, Lock, CreditCard, CheckCircle // <--- Thêm icon mới
+    ChevronDown, ChevronUp, FileText, Lock, CreditCard, CheckCircle, ShieldCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -12,6 +12,9 @@ import toast from 'react-hot-toast';
 import { getCourseById } from '@/services/courseService';
 import { enrollCourse } from '@/services/enrollmentService';
 import { createPaymentVnpay, createPaymentMomo } from '@/services/paymentService';
+
+// Import context
+import { useAuth } from "@/context/AuthContext";
 
 const formatDuration = (seconds) => {
     if (!seconds) return "00:00";
@@ -98,9 +101,13 @@ export default function CourseDetail() {
 const [subscription, setSubscription] = useState(null);
 
 
+    const { user: currentUser } = useAuth();
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
     const [enrolling, setEnrolling] = useState(false);
+
+    const isModerator = currentUser?.role === 'STAFF' || currentUser?.role === 'ADMIN';
+    const canAccessContent = course?.enrolled || isModerator;
 
     // --- STATE CHO MODAL THANH TOÁN ---
     const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -381,7 +388,7 @@ const [subscription, setSubscription] = useState(null);
                                         key={module.id || index}
                                         module={module}
                                         index={index}
-                                        isEnrolled={course.enrolled}
+                                        isEnrolled={canAccessContent}
                                         onLessonClick={() => navigate(`/student/learning/${course.id}`)}
                                         defaultOpen={index === 0}
                                     />
@@ -422,18 +429,21 @@ const [subscription, setSubscription] = useState(null);
                             </div>
 
                             <div className="space-y-3">
-                                {course.enrolled ? (
+                                {canAccessContent ? (
                                     <button
                                         onClick={() => navigate(`/student/learning/${id}`)}
-                                        className="w-full py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"
+                                        className={`w-full py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg ${
+                                            isModerator ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'
+                                        }`}
                                     >
-                                        <PlayCircle size={18} /> VÀO HỌC NGAY
+                                        {isModerator ? <ShieldCheck size={18} /> : <PlayCircle size={18} />}
+                                        {isModerator ? 'XEM VỚI QUYỀN TRUY CẬP FULL' : 'VÀO HỌC NGAY'}
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => setShowEnrollModal(true)}
                                         className="w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2
-        bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200"
+                                            bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200"
                                     >
                                         Đăng ký ngay
                                     </button>

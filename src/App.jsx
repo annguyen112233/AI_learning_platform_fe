@@ -9,6 +9,8 @@ import { Toaster } from "react-hot-toast";
 // Context & Auth
 import { AuthProvider } from "@/context/AuthContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
+import { LanguageProvider } from "@/context/LanguageContext";
+
 import ProtectedRoute from "@/routes/ProtectedRoute";
 
 // Public Pages
@@ -65,7 +67,9 @@ const NotFound = () => (
 function App() {
   return (
     <AuthProvider>
-      <SubscriptionProvider>
+      <LanguageProvider>
+        <SubscriptionProvider>
+
         <Router>
           {/* ✅ TOASTER GLOBAL CONFIGURATION */}
           <Toaster
@@ -107,8 +111,9 @@ function App() {
             <Route
               path="/student"
               element={
-                <ProtectedRoute allowRoles={["STUDENT"]}>
+                <ProtectedRoute allowRoles={["STUDENT", "STAFF", "ADMIN"]}>
                   <StudentLayout />
+
                 </ProtectedRoute>
               }
             >
@@ -126,7 +131,7 @@ function App() {
             <Route
               path="/student/learning/:courseId"
               element={
-                <ProtectedRoute allowRoles={["STUDENT"]}>
+                <ProtectedRoute allowRoles={["STUDENT", "STAFF", "ADMIN"]}>
                   <CoursePlayer />
                 </ProtectedRoute>
               }
@@ -197,6 +202,7 @@ function App() {
           </Routes>
         </Router>
       </SubscriptionProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

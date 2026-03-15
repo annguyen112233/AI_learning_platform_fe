@@ -14,3 +14,7 @@ export const replyDiscussion = (discussionId, reply) => {
 export const deleteDiscussion = (discussionId) => {
     return api.delete(`/discussions/${discussionId}`);
 };
+
+export const likeDiscussion = (discussionId) => {
+    return api.post(`/discussions/${discussionId}/like`);
+};
