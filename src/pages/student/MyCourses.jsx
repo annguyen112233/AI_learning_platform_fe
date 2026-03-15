@@ -57,26 +57,43 @@ export default function MyCourses() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [courses, setCourses] = useState([]);
   const [lastActiveCourse, setLastActiveCourse] = useState(null);
-  const [fetchKey, setFetchKey] = useState(0); // trigger refetch
+  const [fetchKey, setFetchKey] = useState(0); 
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await getCoursesForStudent();
+        const statusMap = {
+          'all': '',
+          'in-progress': 'ACTIVE',
+          'completed': 'COMPLETED'
+        };
+        const response = await getCoursesForStudent(1, 10, debouncedSearch, statusMap[activeTab]);
         const pageData = response.data?.data;
         const fetchedData = pageData?.data || response.data?.data || [];
         const list = Array.isArray(fetchedData) ? fetchedData : [];
         setCourses(list);
-        if (list.length > 0) setLastActiveCourse(list[0]);
+        if (list.length > 0 && !debouncedSearch && activeTab === 'all') {
+          setLastActiveCourse(list[0]);
+        }
       } catch (error) {
         console.error('Lỗi khi lấy danh sách khóa học:', error);
         setCourses([]);
       }
     };
     fetchCourses();
-  }, [fetchKey]); // refetch mỗi khi fetchKey thay đổi
+  }, [fetchKey, debouncedSearch, activeTab]);
 
   // Refetch khi tab được focus lại (user quay lại từ CoursePlayer)
   useEffect(() => {
@@ -168,8 +185,14 @@ export default function MyCourses() {
                 </div>
 
                 <div className="pt-2">
-                  <Button size="lg" onClick={() => navigate(`/student/learning/${lastActiveCourse.courseId}`)}>
-                    Tiếp tục học ngay <ArrowRight size={18} />
+                   <Button size="lg" onClick={() => {
+                      if ((lastActiveCourse.progressPercentage ?? 0) >= 100) {
+                        navigate(`/student/certificate/${lastActiveCourse.courseId}`);
+                      } else {
+                        navigate(`/student/learning/${lastActiveCourse.courseId}`);
+                      }
+                    }}>
+                    {(lastActiveCourse.progressPercentage ?? 0) >= 100 ? "Xem chứng chỉ" : "Tiếp tục học ngay"} <ArrowRight size={18} />
                   </Button>
                 </div>
               </div>
@@ -192,6 +215,8 @@ export default function MyCourses() {
                 <input
                   type="text"
                   placeholder="Tìm kiếm..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
                 />
               </div>
@@ -222,8 +247,14 @@ export default function MyCourses() {
                 <div className="h-48 relative overflow-hidden">
                   <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                    <Button variant="white" size="sm" className="w-full font-bold" onClick={() => navigate(`/student/learning/${course.courseId}`)}>
-                      {(course.progressPercentage ?? 0) === 100 ? 'Xem lại chứng chỉ' : 'Vào học ngay'}
+                    <Button variant="white" size="sm" className="w-full font-bold" onClick={() => {
+                        if ((course.progressPercentage ?? 0) >= 100) {
+                          navigate(`/student/certificate/${course.courseId}`);
+                        } else {
+                          navigate(`/student/learning/${course.courseId}`);
+                        }
+                      }}>
+                      {(course.progressPercentage ?? 0) >= 100 ? 'Xem lại chứng chỉ' : 'Vào học ngay'}
                     </Button>
                   </div>
                   {(course.progressPercentage ?? 0) === 100 && (

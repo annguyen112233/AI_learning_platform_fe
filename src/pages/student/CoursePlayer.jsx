@@ -101,24 +101,34 @@ export default function CoursePlayer() {
 
         setCourse(data);
 
-        // Giả lập dữ liệu chapters nếu API trả về cấu trúc khác, cần map lại cho đúng
-        // Ở đây giả định data.modules giống cấu trúc CourseDetail
+        // Map chapters and lessons from fetched data
+        const initialCompletedIds = new Set();
         const mappedChapters = (data.modules || []).map(mod => ({
           id: mod.moduleId,
           title: mod.title,
-          lessons: (mod.lessons || []).map((les, index) => ({
-            id: les.lessonId,
-            order: index + 1,
-            title: les.title,
-            duration: "10:00", // Placeholder
-            status: 'unlocked', // Logic check status nên làm ở backend
-            videoUrl: les.videoUrl,
-            documentUrl: les.documentUrl || "Chưa cập nhật tài liệu",
-            description: "Mô tả bài học..."
-          }))
+          lessons: (mod.lessons || []).map((les, index) => {
+            if (les.isCompleted) initialCompletedIds.add(les.lessonId);
+            
+            // Format duration from seconds to MM:SS
+            const mins = Math.floor((les.duration || 0) / 60);
+            const secs = (les.duration || 0) % 60;
+            const durationStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            return {
+              id: les.lessonId,
+              order: les.orderIndex || (index + 1),
+              title: les.title,
+              duration: durationStr,
+              status: les.isCompleted ? 'completed' : 'unlocked', 
+              videoUrl: les.videoUrl,
+              documentUrl: les.documentUrl,
+              description: les.description || "Mô tả bài học..."
+            };
+          })
         }));
 
         setChapters(mappedChapters);
+        setCompletedLessonIds(initialCompletedIds);
 
         // Mặc định chọn bài học đầu tiên
         if (mappedChapters.length > 0 && mappedChapters[0].lessons.length > 0) {
@@ -129,7 +139,6 @@ export default function CoursePlayer() {
       } catch (err) {
         console.error(err);
         toast.error("Không thể tải khóa học hoặc bạn chưa đăng ký.");
-        // navigate("/student/courses"); // Uncomment nếu muốn redirect khi lỗi
         setLoading(false);
       }
     };
@@ -181,12 +190,18 @@ export default function CoursePlayer() {
   // Lắng nghe postMessage từ YouTube IFrame
   useEffect(() => {
     const handleMessage = (event) => {
-      // YouTube gửi dữ liệu dạng JSON string
+      // Security: verify origin if needed, but YouTube can be different subdomains
+      if (!event.origin.includes('youtube.com') && !event.origin.includes('youtube-nocookie.com')) return;
+
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        
         // playerState: 0 = ended, 1 = playing, 2 = paused
-        if (data?.event === 'onStateChange' && data?.info === 0) {
-          // Video kết thúc → auto complete
+        // Some embeds send status in data.info or data.arg
+        const status = data?.info ?? data?.arg;
+        
+        if (data?.event === 'onStateChange' && (status === 0 || data?.info?.playerState === 0)) {
+          console.log("YouTube Video Ended - Auto completing lesson:", currentLesson?.id);
           autoCompleteLesson(currentLesson?.id);
         }
       } catch (_) { /* ignore non-JSON messages */ }
@@ -360,23 +375,24 @@ export default function CoursePlayer() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-900">{currentLesson?.title}</h2>
               <div className="flex gap-2">
-                {/* ✅ Nút Hoàn thành bài học */}
-                <button
-                  onClick={handleCompleteLesson}
-                  disabled={completing}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                    completedLessonIds.has(currentLesson?.id)
-                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-default'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg active:scale-95'
-                  } disabled:opacity-60`}
-                >
-                  {completing ? (
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                {/* Hiển thị trạng thái hoàn thành - Không cho phép đánh dấu thủ công nếu yêu cầu xem hết video */}
+                <div className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                  completedLessonIds.has(currentLesson?.id)
+                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                    : 'bg-slate-100 text-slate-500 border border-slate-200 opacity-80'
+                }`}>
+                  {completedLessonIds.has(currentLesson?.id) ? (
+                    <>
+                      <CheckCircle2 size={16} strokeWidth={3} />
+                      Đã hoàn thành
+                    </>
                   ) : (
-                    <Check size={16} strokeWidth={3} />
+                    <>
+                      <Play size={16} fill="currentColor" className="animate-pulse" />
+                      Đang học...
+                    </>
                   )}
-                  {completedLessonIds.has(currentLesson?.id) ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
-                </button>
+                </div>
                 <button className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
                   <Share2 size={20} />
                 </button>
@@ -505,7 +521,7 @@ export default function CoursePlayer() {
                           status: completedLessonIds.has(lesson.id) ? 'completed' : lesson.status
                         }}
                         isActive={currentLesson?.id === lesson.id}
-                        onClick={isModerator ? () => setCurrentLesson(lesson) : onClick}
+                        onClick={setCurrentLesson}
                         isModerator={isModerator}
                       />
                     ))}

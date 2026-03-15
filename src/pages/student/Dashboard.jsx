@@ -303,10 +303,11 @@ export default function StudentDashboard() {
       ) : null}
 
       {/* 3. Stats Grid - Modern White Containers */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
         {[
           { label: "Thời gian học", val: stats?.totalLearningTime || "0h", sub: "Hoạt động tích cực", icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Sức mạnh kiến thức", val: (stats?.completionRate || 0) + "%", sub: "Trung bình các khóa", icon: BookOpen, color: "text-violet-600", bg: "bg-violet-50" },
+          { label: "Khóa học", val: stats?.totalCourses || 0, sub: "Đang tham gia", icon: Play, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Hoàn thành", val: (stats?.completionRate || 0) + "%", sub: "Tiến độ học tập", icon: BookOpen, color: "text-violet-600", bg: "bg-violet-50" },
           { label: "Xếp hạng Quiz", val: (stats?.averageScore?.toFixed(1) || 0), sub: "Thành tích thực tế", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
         ].map((stat, idx) => (
           <div

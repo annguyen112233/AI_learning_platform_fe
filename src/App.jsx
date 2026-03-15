@@ -32,6 +32,7 @@ import ChatMessage from "@/pages/student/ChatMessage";
 import Achievements from "@/pages/student/Achievements";
 import CourseDetail from "@/pages/student/CourseDetail";
 import QuizPage from "@/pages/student/MockTestPage";
+import Certificate from "@/pages/student/Certificate";
 
 // Instructor Pages & Layout
 import InstructorLayout from "@/layouts/InstructorLayout";
@@ -125,6 +126,7 @@ function App() {
               <Route path="chat" element={<ChatMessage />} />
               <Route path="achievements" element={<Achievements />} />
               <Route path="course/:id" element={<CourseDetail />} />
+              <Route path="certificate/:courseId" element={<Certificate />} />
             </Route>
 
             {/* Learning Space (Full screen - Không dùng Layout) */}
