@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
     Flag, MessageSquare, FileVideo, User, AlertTriangle, CheckCircle,
@@ -82,30 +83,36 @@ export default function StaffReports() {
         <div className="space-y-6 font-sans text-slate-800 animate-fade-in-up">
 
             {/* 1. HEADER & STATS */}
-            <div className="flex flex-col md:flex-row justify-between gap-4 md:items-end">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-slate-800 flex items-center gap-3">
-                        <Flag className="text-rose-600" size={28} /> Xử lý vi phạm
+            <div className="flex flex-col md:flex-row justify-between gap-6 md:items-center">
+                <div className="animate-fade-in">
+                    <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <div className="w-12 h-12 bg-rose-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-rose-200">
+                            <Flag size={24} />
+                        </div>
+                        Xử lý vi phạm
                     </h1>
-                    <p className="text-slate-500 font-medium mt-1">Tiếp nhận và xử lý các báo cáo từ người dùng và hệ thống.</p>
+                    <p className="text-slate-500 font-medium mt-2 max-w-lg">
+                        Hệ thống tiếp nhận báo cáo từ người dùng. Vui lòng xem xét kỹ lưỡng trước khi đưa ra quyết định xử lý.
+                    </p>
                 </div>
-                <div className="flex gap-3">
-                    <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
-                        <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><AlertTriangle size={18} /></div>
+                <div className="flex gap-4">
+                    <div className="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-4 hover:shadow-md transition-all">
+                        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-black"><AlertTriangle size={24} /></div>
                         <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase">Chờ xử lý</p>
-                            <p className="text-lg font-bold text-rose-600">{String(stats.pending).padStart(2, '0')}</p>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Chờ xử lý</p>
+                            <p className="text-2xl font-black text-rose-600 leading-none mt-1">{String(stats.pending).padStart(2, '0')}</p>
                         </div>
                     </div>
-                    <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
-                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle size={18} /></div>
+                    <div className="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-4 hover:shadow-md transition-all">
+                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-black"><CheckCircle size={24} /></div>
                         <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase">Đã xong</p>
-                            <p className="text-lg font-bold text-emerald-600">{String(stats.resolved).padStart(2, '0')}</p>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Đã giải quyết</p>
+                            <p className="text-2xl font-black text-emerald-600 leading-none mt-1">{String(stats.resolved).padStart(2, '0')}</p>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             {/* 2. FILTERS & SEARCH */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
@@ -229,9 +236,9 @@ export default function StaffReports() {
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-slate-700 italic relative">
                                     <span className="absolute top-2 left-2 text-3xl text-slate-300 font-serif">"</span>
                                     <div className="relative z-10 pl-4">{selectedReport.targetContent}</div>
-                                    <a href={selectedReport.targetLink || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 mt-3 hover:underline">
+                                    <Link to={selectedReport.targetLink || '#'} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 mt-3 hover:underline">
                                         Xem nội dung gốc <Eye size={12} />
-                                    </a>
+                                    </Link>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">

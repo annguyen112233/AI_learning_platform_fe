@@ -4,7 +4,7 @@ import {
     MessageSquare, Search, CheckCircle, HelpCircle,
     CornerDownRight, Clock, Send, ThumbsUp, Trash2, EyeOff
 } from 'lucide-react';
-import { getDiscussions, replyDiscussion, deleteDiscussion } from '@/services/discussionService';
+import { getDiscussions, replyDiscussion, deleteDiscussion, likeDiscussion } from '@/services/discussionService';
 
 const QUICK_REPLIES = [
     "Cảm ơn bạn đã phản hồi tích cực! Chúc bạn học tốt.",
@@ -72,6 +72,15 @@ export default function StaffDiscussions() {
         }
     };
 
+    const handleLike = async (id) => {
+        try {
+            await likeDiscussion(id);
+            fetchDiscussions();
+        } catch (err) {
+            console.error('Error liking discussion:', err);
+        }
+    };
+
     const formatTime = (ts) => {
         if (!ts) return '';
         try { return new Date(ts).toLocaleString('vi-VN'); } catch { return ts; }
@@ -81,24 +90,33 @@ export default function StaffDiscussions() {
         <div className="space-y-6 font-sans text-slate-800 animate-fade-in-up">
 
             {/* 1. HEADER & STATS */}
-            <div className="flex flex-col md:flex-row justify-between gap-4 md:items-end">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-slate-800 flex items-center gap-3">
-                        <MessageSquare className="text-blue-600" size={28} /> Q&A & Bình luận
+            <div className="flex flex-col md:flex-row justify-between gap-6 md:items-center">
+                <div className="animate-fade-in">
+                    <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                            <MessageSquare size={24} />
+                        </div>
+                        Q&A & Bình luận
                     </h1>
-                    <p className="text-slate-500 font-medium mt-1">Quản lý tương tác, giải đáp thắc mắc học viên.</p>
+                    <p className="text-slate-500 font-medium mt-2 max-w-lg">
+                        Giải đáp các thắc mắc của học viên và quản lý các cuộc thảo luận trong bài học.
+                    </p>
                 </div>
-                <div className="flex items-center gap-4 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-                    <div className="flex items-center gap-2 px-3">
-                        <div className={`w-2 h-2 rounded-full ${stats.unanswered > 0 ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                        <span className="text-xs font-bold text-slate-500">{stats.unanswered} câu hỏi chưa trả lời</span>
+                <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                    <div className="flex flex-col items-center px-4 border-r border-slate-100">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cần trả lời</span>
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${stats.unanswered > 0 ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                            <span className="text-xl font-black text-slate-800">{stats.unanswered}</span>
+                        </div>
                     </div>
-                    <div className="h-6 w-px bg-slate-200"></div>
-                    <div className="flex items-center gap-2 px-3">
-                        <span className="text-xs font-bold text-slate-500">Tổng: <span className="text-slate-800">{stats.total}</span></span>
+                    <div className="flex flex-col items-center px-4">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng số</span>
+                        <span className="text-xl font-black text-slate-800">{stats.total}</span>
                     </div>
                 </div>
             </div>
+
 
             {/* 2. TOOLBAR */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -174,7 +192,10 @@ export default function StaffDiscussions() {
                                 )}
 
                                 <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
-                                    <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
+                                    <button 
+                                        onClick={() => handleLike(item.id)}
+                                        className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                                    >
                                         <ThumbsUp size={14} /> {item.likes > 0 ? item.likes : 'Thích'}
                                     </button>
                                     <button

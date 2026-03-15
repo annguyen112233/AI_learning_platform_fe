@@ -26,14 +26,21 @@ export default function StudentLayout() {
   const { subscription } = useSubscription();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const sidebarItems = [
-    { icon: LayoutDashboard, label: "Tổng quan", path: "/student/dashboard" },
-    { icon: BookOpen,        label: "Khóa học",  path: "/student/courses" },
-    { icon: FileText,        label: "Thi thử",   path: "/student/mock-test" },
-    { icon: Award,           label: "Thành tích",path: "/student/achievements" },
-    { icon: MessageSquare,   label: "Trợ lý AI", path: "/student/chat" },
-    { icon: User,            label: "Hồ sơ",     path: "/student/profile" },
-  ];
+  const isModerator = user?.role === 'STAFF' || user?.role === 'ADMIN';
+
+  const sidebarItems = isModerator 
+    ? [
+        { icon: LayoutDashboard, label: "Tổng quan Staff", path: "/staff/dashboard" },
+        { icon: User,            label: "Hồ sơ cá nhân",     path: "/staff/profile" },
+      ]
+    : [
+        { icon: LayoutDashboard, label: "Tổng quan", path: "/student/dashboard" },
+        { icon: BookOpen,        label: "Khóa học",  path: "/student/courses" },
+        { icon: FileText,        label: "Thi thử",   path: "/student/mock-test" },
+        { icon: Award,           label: "Thành tích",path: "/student/achievements" },
+        { icon: MessageSquare,   label: "Trợ lý AI", path: "/student/chat" },
+        { icon: User,            label: "Hồ sơ",     path: "/student/profile" },
+      ];
 
   const handleLogout = async () => {
     try {
@@ -94,14 +101,14 @@ export default function StudentLayout() {
               🐳
             </div>
             <span style={{
-              fontWeight: 900, fontSize: 17, color: '#15803d',
+              fontWeight: 900, fontSize: 17, color: isModerator ? '#1d4ed8' : '#15803d',
               whiteSpace: 'nowrap',
               opacity: sidebarOpen ? 1 : 0,
               transform: sidebarOpen ? 'translateX(0)' : 'translateX(-8px)',
               transition: 'opacity 0.2s, transform 0.25s',
               pointerEvents: sidebarOpen ? 'auto' : 'none',
             }}>
-              SABO Academy
+              {isModerator ? 'SABO Moderator' : 'SABO Academy'}
             </span>
           </div>
 
@@ -129,13 +136,18 @@ export default function StudentLayout() {
               e.currentTarget.style.color = sidebarOpen ? '#64748b' : '#15803d';
             }}
           >
-            <ChevronLeft
-              size={18}
+            <svg
+              width="18" height="18" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
               style={{
+                minWidth: '18px', minHeight: '18px', display: 'block', flexShrink: 0,
                 transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
                 transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
               }}
-            />
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
           </button>
         </div>
 
@@ -150,8 +162,8 @@ export default function StudentLayout() {
                 className={({ isActive }) =>
                   `group flex items-center rounded-xl transition-all duration-200 ${
                     isActive
-                      ? 'bg-green-50 text-green-700 font-bold shadow-sm'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium'
+                      ? (isModerator ? 'bg-indigo-50 text-indigo-700 font-bold shadow-sm' : 'bg-green-50 text-green-700 font-bold shadow-sm')
+                      : (isModerator ? 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-green-600 font-medium')
                   }`
                 }
                 style={{
@@ -166,7 +178,7 @@ export default function StudentLayout() {
                     <item.icon
                       size={22}
                       strokeWidth={isActive ? 2.5 : 2}
-                      style={{ flexShrink: 0, color: isActive ? '#16a34a' : undefined }}
+                      style={{ flexShrink: 0, color: isActive ? (isModerator ? '#4338ca' : '#16a34a') : undefined }}
                     />
                     <span style={{
                       whiteSpace: 'nowrap',
@@ -277,22 +289,6 @@ export default function StudentLayout() {
             zIndex: 20,
           }}
         >
-          {/* Hamburger (mobile / extra toggle) */}
-          <button
-            onClick={() => setSidebarOpen(v => !v)}
-            title="Toggle sidebar"
-            style={{
-              width: 40, height: 40, borderRadius: 10,
-              border: 'none', background: '#f8fafc',
-              color: '#475569', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.color = '#15803d'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#475569'; }}
-          >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
             {/* Notification */}
@@ -350,11 +346,14 @@ export default function StudentLayout() {
                 </p>
                 <div style={{ display: 'flex', gap: 6, marginTop: 2, alignItems: 'center' }}>
                   <span style={{
-                    fontSize: 10, fontWeight: 700, color: '#16a34a',
-                    background: '#f0fdf4', padding: '2px 6px', borderRadius: 4,
+                    fontSize: 10, fontWeight: 700, 
+                    color: isModerator ? '#4338ca' : '#16a34a',
+                    background: isModerator ? '#eef2ff' : '#f0fdf4', 
+                    padding: '2px 6px', borderRadius: 4,
                     textTransform: 'uppercase',
+                    border: `1px solid ${isModerator ? '#c7d2fe' : '#bbf7d0'}`,
                   }}>
-                    {user?.level || 'N5'}
+                    {isModerator ? 'MODERATOR' : (user?.level || 'N5')}
                   </span>
                   {subscription?.active === 'ACTIVE' && (
                     <span style={{

@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 
 import { getCourseById } from '@/services/courseService';
 import { completeLesson } from '@/services/lessonService';
+import { useAuth } from "@/context/AuthContext";
+import { ShieldCheck, ArrowLeft } from 'lucide-react';
 
 // --- COMPONENT: THẺ BÀI HỌC (LESSON CARD) ---
 const LessonCard = ({ lesson, isActive, onClick }) => {
@@ -58,6 +60,8 @@ const LessonCard = ({ lesson, isActive, onClick }) => {
 export default function CoursePlayer() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const isModerator = currentUser?.role === 'STAFF' || currentUser?.role === 'ADMIN';
 
   // State quản lý dữ liệu
   const [course, setCourse] = useState(null);
@@ -259,9 +263,13 @@ export default function CoursePlayer() {
       {/* --- HEADER --- */}
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 z-20">
         <div className="flex items-center gap-4">
-          <Link to={`/student/courses`} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
-            <ChevronLeft size={20} />
-          </Link>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+            title="Quay lại"
+          >
+            <ArrowLeft size={20} />
+          </button>
           <div>
             <h2 className="font-bold text-slate-800 truncate max-w-[200px] md:max-w-md">{course?.title}</h2>
             <p className="text-xs text-slate-500 hidden md:block">Đang học: {currentLesson?.title}</p>
@@ -278,10 +286,17 @@ export default function CoursePlayer() {
           </button>
 
           {/* Gamification Badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-600 rounded-full text-xs font-bold border border-orange-100">
-            <Flame size={14} fill="currentColor" />
-            <span>3 Ngày</span>
-          </div>
+          {isModerator ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold border border-indigo-100">
+              <ShieldCheck size={14} />
+              <span>MODERATOR VIEW</span>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-600 rounded-full text-xs font-bold border border-orange-100">
+              <Flame size={14} fill="currentColor" />
+              <span>3 Ngày</span>
+            </div>
+          )}
           <div className="w-8 h-8 rounded-full bg-emerald-100 border-2 border-white shadow-sm overflow-hidden">
             <img src={`https://ui-avatars.com/api/?name=User&background=10b981&color=fff`} alt="User" />
           </div>
@@ -490,7 +505,8 @@ export default function CoursePlayer() {
                           status: completedLessonIds.has(lesson.id) ? 'completed' : lesson.status
                         }}
                         isActive={currentLesson?.id === lesson.id}
-                        onClick={setCurrentLesson}
+                        onClick={isModerator ? () => setCurrentLesson(lesson) : onClick}
+                        isModerator={isModerator}
                       />
                     ))}
                   </div>

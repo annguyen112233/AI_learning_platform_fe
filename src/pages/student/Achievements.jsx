@@ -380,6 +380,24 @@ const styles = `
     75%       { transform: rotate(-20deg); }
   }
 
+  /* Wings flap animation */
+  .kitsune-wing-left {
+    transform-origin: right center;
+    animation: wingFlapLeft 2s ease-in-out infinite;
+  }
+  .kitsune-wing-right {
+    transform-origin: left center;
+    animation: wingFlapRight 2s ease-in-out infinite;
+  }
+  @keyframes wingFlapLeft {
+    0%, 100% { transform: rotateY(0deg) rotateZ(0deg); }
+    50%       { transform: rotateY(60deg) rotateZ(-15deg); }
+  }
+  @keyframes wingFlapRight {
+    0%, 100% { transform: rotateY(0deg) rotateZ(0deg); }
+    50%       { transform: rotateY(-60deg) rotateZ(15deg); }
+  }
+
   /* Eye blink */
   .kitsune-eye {
     animation: eyeBlink 4s ease-in-out infinite;
@@ -513,9 +531,9 @@ const styles = `
 
   /* 🌠 Shooting / meteor stars */
   @keyframes meteorFall {
-    0%   { transform: translateX(0) translateY(0) rotate(215deg); opacity: 1; }
-    70%  { opacity: 0.8; }
-    100% { transform: translateX(-800px) translateY(480px) rotate(215deg); opacity: 0; }
+    0%   { transform: translateX(0) translateY(0) rotate(35deg); opacity: 1; }
+    70%  { opacity: 1; }
+    100% { transform: translateX(1200px) translateY(800px) rotate(35deg); opacity: 0; }
   }
   .meteor {
     position: absolute;
@@ -523,20 +541,20 @@ const styles = `
     background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 50%, white 100%);
     border-radius: 999px;
     animation: meteorFall var(--dur, 8s) linear infinite var(--delay, 0s);
-    transform-origin: right center;
+    transform-origin: center;
     opacity: 0;
   }
   .meteor::after {
     content: '';
     position: absolute;
-    right: 0;
+    right: -2px;
     top: 50%;
     transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
     background: white;
-    box-shadow: 0 0 8px 3px rgba(255,255,255,0.7), 0 0 20px 6px rgba(180,180,255,0.4);
+    box-shadow: 0 0 12px 2px rgba(255,255,255,0.8), 0 0 20px 4px rgba(180,180,255,0.4);
   }
 
   /* Grid — subtle on dark */
@@ -557,76 +575,92 @@ const styles = `
    🌠 METEOR SHOWER BACKGROUND
    ===================================================== */
 const MeteorBackground = () => {
-  // 100 twinkling stars with random positions
-  const stars = Array.from({ length: 110 }, (_, i) => ({
-    id: i,
-    left:  `${Math.random() * 100}%`,
-    top:   `${Math.random() * 100}%`,
-    size:  Math.random() * 2.5 + 0.5,
-    dur:   `${(Math.random() * 4 + 1.5).toFixed(1)}s`,
-    delay: `${(Math.random() * -6).toFixed(1)}s`,
-    brightness: Math.random() > 0.85 ? '#a5f3fc' : Math.random() > 0.7 ? '#fde68a' : 'white',
-  }));
+  // 600 stars with heavy bias towards center clusters to avoid dark spots
+  const stars = Array.from({ length: 600 }, (_, i) => {
+    // 40% of stars will cluster in the center area
+    const isCenterCluster = i > 360;
+    return {
+      id: i,
+      left:  isCenterCluster ? `${25 + Math.random() * 50}%` : `${Math.random() * 100}%`,
+      top:   isCenterCluster ? `${15 + Math.random() * 65}%` : `${Math.random() * 100}%`,
+      size:  Math.random() * (isCenterCluster ? 1.8 : 2.5) + 0.4,
+      dur:   `${(Math.random() * 5 + 3).toFixed(1)}s`,
+      delay: `${(Math.random() * -10).toFixed(1)}s`,
+      brightness: Math.random() > 0.9 ? '#a5f3fc' : Math.random() > 0.8 ? '#fde68a' : 'white',
+    };
+  });
 
-  // 18 shooting stars
+  const nebulas = [
+    { left: '20%', top: '30%', color: '#4338ca', opacity: 0.15, scale: 2 },
+    { left: '50%', top: '50%', color: '#1e40af', opacity: 0.2,  scale: 2.5 }, // Strong center nebula
+    { left: '80%', top: '40%', color: '#3730a3', opacity: 0.15, scale: 2 },
+    { left: '40%', top: '70%', color: '#1d4ed8', opacity: 0.15, scale: 1.8 },
+  ];
+
+  // 30 shooting stars
   const meteors = [
-    { w: 220, left: '80%', top:  '5%',  dur: '7s',  delay: '0s'   },
-    { w: 160, left: '92%', top: '18%',  dur: '9s',  delay: '-3s'  },
-    { w: 280, left: '70%', top:  '2%',  dur: '11s', delay: '-5s'  },
-    { w: 140, left: '88%', top: '35%',  dur: '8s',  delay: '-1s'  },
-    { w: 200, left: '75%', top: '10%',  dur: '13s', delay: '-7s'  },
-    { w: 180, left: '60%', top:  '0%',  dur: '10s', delay: '-2s'  },
-    { w: 120, left: '95%', top: '50%',  dur: '6s',  delay: '-4s'  },
-    { w: 250, left: '50%', top:  '3%',  dur: '12s', delay: '-9s'  },
-    { w: 170, left: '83%', top: '22%',  dur: '8.5s',delay: '-6s'  },
-    { w: 110, left: '65%', top: '42%',  dur: '7.5s',delay: '-11s' },
-    { w: 300, left: '40%', top:  '1%',  dur: '14s', delay: '-8s'  },
-    { w: 150, left: '97%', top: '15%',  dur: '9.5s',delay: '-13s' },
-    { w: 190, left: '55%', top: '30%',  dur: '11s', delay: '-2.5s'},
-    { w: 130, left: '30%', top:  '5%',  dur: '8s',  delay: '-15s' },
-    { w: 210, left: '77%', top: '60%',  dur: '10s', delay: '-10s' },
-    { w: 160, left: '45%', top: '15%',  dur: '7s',  delay: '-4.5s'},
-    { w: 240, left: '20%', top:  '8%',  dur: '13s', delay: '-6.5s'},
-    { w: 100, left: '35%', top: '25%',  dur: '6.5s',delay: '-12s' },
+    { w: 180, left: '-10%', top: '5%',   dur: '1.2s', delay: '0s'   },
+    { w: 120, left: '5%',   top: '-5%',  dur: '0.8s', delay: '3s'   },
+    { w: 220, left: '20%',  top: '-10%', dur: '1.5s', delay: '7s'   },
+    { w: 140, left: '-5%',  top: '25%',  dur: '1s',   delay: '2s'   },
+    { w: 200, left: '15%',  top: '0%',   dur: '1.4s', delay: '5s'   },
+    { w: 160, left: '30%',  top: '-8%',  dur: '0.9s', delay: '1s'   },
+    { w: 280, left: '-15%', top: '15%',  dur: '2s',   delay: '10s'  },
+    { w: 130, left: '10%',  top: '10%',  dur: '1.1s', delay: '4s'   },
+    { w: 190, left: '40%',  top: '-5%',  dur: '1.3s', delay: '8s'   },
+    { w: 150, left: '25%',  top: '15%',  dur: '1.2s', delay: '6s'   },
+    { w: 210, left: '-5%',  top: '40%',  dur: '1.6s', delay: '9s'   },
+    { w: 170, left: '45%',  top: '0%',   dur: '1s',   delay: '12s'  },
+    { w: 140, left: '35%',  top: '20%',  dur: '1.4s', delay: '15s'  },
+    { w: 240, left: '50%',  top: '-10%', dur: '1.3s', delay: '11s'  },
+    { w: 180, left: '-12%', top: '30%',  dur: '1.5s', delay: '14s'  },
+    { w: 130, left: '15%',  top: '35%',  dur: '0.9s', delay: '18s'  },
+    { w: 200, left: '60%',  top: '-5%',  dur: '1.2s', delay: '22s'  },
+    { w: 160, left: '10%',  top: '20%',  dur: '1.1s', delay: '25s'  },
+    { w: 250, left: '70%',  top: '-15%', dur: '1.8s', delay: '4.5s' },
+    { w: 120, left: '-20%', top: '10%',  dur: '0.7s', delay: '6.5s' },
+    { w: 300, left: '30%',  top: '-20%', dur: '2.2s', delay: '13s'  },
+    { w: 150, left: '-10%', top: '50%',  dur: '1.1s', delay: '16s'  },
+    { w: 200, left: '80%',  top: '-5%',  dur: '1.4s', delay: '20s'  },
+    { w: 180, left: '5%',   top: '45%',  dur: '1.3s', delay: '23s'  },
+    { w: 140, left: '45%',  top: '15%',  dur: '0.9s', delay: '1.5s' },
+    { w: 220, left: '65%',  top: '5%',   dur: '1.5s', delay: '28s'  },
+    { w: 160, left: '-5%',  top: '12%',  dur: '1.2s', delay: '3.5s' },
+    { w: 190, left: '10%',  top: '60%',  dur: '1.4s', delay: '32s'  },
+    { w: 130, left: '55%',  top: '-10%', dur: '1.0s', delay: '35s'  },
+    { w: 210, left: '20%',  top: '45%',  dur: '1.6s', delay: '38s'  },
   ];
 
   return (
     <div style={{
       position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden',
-      background: 'linear-gradient(160deg, #020817 0%, #050d24 25%, #0a0f2e 50%, #06091a 75%, #010510 100%)',
+      background: 'radial-gradient(circle at 50% 50%, #0c142c 0%, #020617 100%)',
     }}>
-      {/* Subtle perspective grid */}
       <div className="study-grid" />
 
-      {/* Nebula blobs */}
-      <div style={{
-        position:'absolute', top:'-20%', left:'-10%', width:900, height:900, borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(67,56,202,0.18) 0%, rgba(139,92,246,0.06) 50%, transparent 75%)',
-        filter:'blur(60px)',
-      }} />
-      <div style={{
-        position:'absolute', bottom:'-15%', right:'-10%', width:800, height:800, borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(15,118,110,0.14) 0%, rgba(6,182,212,0.05) 50%, transparent 75%)',
-        filter:'blur(60px)',
-      }} />
-      <div style={{
-        position:'absolute', top:'30%', left:'20%', width:600, height:600, borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 70%)',
-        filter:'blur(50px)',
-      }} />
+      {/* ── NEBULA CLOUDS ── */}
+      {nebulas.map((nb, i) => (
+        <div key={`nb-${i}`} style={{
+          position: 'absolute', left: nb.left, top: nb.top,
+          width: '500px', height: '500px', borderRadius: '50%',
+          background: `radial-gradient(circle, ${nb.color} 0%, transparent 70%)`,
+          filter: 'blur(80px)', opacity: nb.opacity,
+          transform: `translate(-50%, -50%) scale(${nb.scale})`,
+        }} />
+      ))}
 
-      {/* ✨ Twinkling stars */}
+      {/* ── TWINKLING STARS ── */}
       {stars.map(s => (
         <div key={`star-${s.id}`} className="star-dot" style={{
           left: s.left, top: s.top,
           width: s.size, height: s.size,
           background: s.brightness,
-          boxShadow: s.size > 2 ? `0 0 ${s.size * 3}px ${s.brightness}` : 'none',
+          boxShadow: s.size > 1.6 ? `0 0 ${s.size * 4}px ${s.brightness}` : 'none',
           '--dur': s.dur, '--delay': s.delay,
         }} />
       ))}
 
-      {/* 🌠 Shooting stars / meteors */}
+      {/* ── METEORS ── */}
       {meteors.map((m, i) => (
         <div key={`meteor-${i}`} className="meteor" style={{
           width: m.w, left: m.left, top: m.top,
@@ -911,7 +945,7 @@ const EVOLUTION_STAGES = [
     hasCrown: true, hasHalo: false, tails: 1, scale: 1,
     eyeColor: '#1e3a5f', glowColor: '#f97316',
     auraColor: null,
-    badge: '👑',
+    badge: '👑', mount: 'book'
   },
   {
     minLevel: 16, maxLevel: 20,
@@ -921,7 +955,7 @@ const EVOLUTION_STAGES = [
     hasCrown: true, crownColor: '#7c3aed', hasHalo: false, tails: 2, scale: 1,
     eyeColor: '#7c3aed', eyeGlow: '#c4b5fd', glowColor: '#a855f7',
     auraColor: 'rgba(168,85,247,0.15)',
-    badge: '⚡',
+    badge: '⚡', mount: 'cloud_storm', hasWings: true, wingColor: '#a855f7'
   },
   {
     minLevel: 21, maxLevel: 999,
@@ -931,7 +965,7 @@ const EVOLUTION_STAGES = [
     hasCrown: true, crownColor: '#d97706', hasHalo: true, tails: 3, scale: 1.05,
     eyeColor: '#92400e', eyeGlow: '#fcd34d', glowColor: '#fbbf24',
     auraColor: 'rgba(251,191,36,0.2)',
-    badge: '🌟',
+    badge: '🌟', mount: 'leaf_divine', hasWings: true, wingColor: '#fbbf24'
   },
 ];
 
@@ -1071,9 +1105,9 @@ const KitsuneMascot = ({ level = 12 }) => {
 
   const p = stage.palette;
   const isMysterious = stage.tails >= 2 && stage.tails < 3;
-  const isDivine = stage.tails >= 3;
-  const hasBandana = !!stage.hasBandana;
-  const eyeFill = stage.eyeColor || '#1e3a5f';
+  const isDivine     = stage.tails >= 3;
+  const hasBandana   = !!stage.hasBandana;
+  const eyeFill      = stage.eyeColor || '#1e3a5f';
   const eyeGlow = stage.eyeGlow || null;
   const crownFill = stage.crownColor || null;
   const svgId = `kit-${evolveKey}`;
@@ -1096,7 +1130,7 @@ const KitsuneMascot = ({ level = 12 }) => {
 
         {/* Stage label badge */}
         <div style={{
-          position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', top: -25, left: '50%', transform: 'translateX(-50%)',
           background: stage.auraColor ? `linear-gradient(135deg,${stage.glowColor}33,${stage.glowColor}55)` : 'linear-gradient(135deg,#fef3c7,#fde68a)',
           border: `1px solid ${stage.glowColor}55`,
           borderRadius: 999, padding: '2px 10px', fontSize: 10, fontWeight: 800,
@@ -1137,7 +1171,7 @@ const KitsuneMascot = ({ level = 12 }) => {
         {/* Speech Bubble */}
         {showBubble && (
           <div key={bubbleKey} className="kitsune-bubble" style={{
-            position: 'absolute', top: 2, right: -14, zIndex: 10,
+            position: 'absolute', top: 12, right: -14, zIndex: 10,
             background: 'white', border: `2px solid ${stage.glowColor}66`,
             borderRadius: '18px 18px 18px 4px', padding: '7px 12px',
             boxShadow: `0 6px 20px ${stage.glowColor}22`, whiteSpace: 'nowrap',
@@ -1186,6 +1220,22 @@ const KitsuneMascot = ({ level = 12 }) => {
               <stop offset="50%"  stopColor={isDivine ? '#fbbf24' : isMysterious ? '#a855f7' : '#94a3b8'} />
               <stop offset="100%" stopColor={isDivine ? '#d97706' : isMysterious ? '#6d28d9' : '#64748b'} />
             </linearGradient>
+            {/* Premium Mount Gradients */}
+            <radialGradient id={`mountGlow-${svgId}`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.8" />
+              <stop offset="100%" stopColor={stage.glowColor} stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id={`scrollGrad-${svgId}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#78350f" />
+              <stop offset="15%" stopColor="#fef3c7" />
+              <stop offset="85%" stopColor="#fef3c7" />
+              <stop offset="100%" stopColor="#78350f" />
+            </linearGradient>
+            <radialGradient id={`plasmaGrad-${svgId}`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#c4b5fd" />
+              <stop offset="70%" stopColor="#7c3aed" />
+              <stop offset="100%" stopColor="#4c1d95" />
+            </radialGradient>
             {/* Blade */}
             <linearGradient id={`blade-${svgId}`} x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%"   stopColor="#f1f5f9" />
@@ -1197,16 +1247,199 @@ const KitsuneMascot = ({ level = 12 }) => {
               <stop offset="0%"   stopColor={crownFill ? '#f3e8ff' : '#fef3c7'} />
               <stop offset="100%" stopColor={crownFill ? crownFill : '#f59e0b'} />
             </linearGradient>
-            {/* Shiny eye highlight */}
-            <radialGradient id={`eyeShine-${svgId}`} cx="35%" cy="30%" r="65%">
-              <stop offset="0%"   stopColor="white" />
+            {/* Wing Gradients */}
+            <linearGradient id={`wingGrad-${svgId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#fde68a" />
+              <stop offset="40%" stopColor="#fbbf24" />
+              <stop offset="100%" stopColor="#ea580c" />
+            </linearGradient>
+            <linearGradient id={`wingGradPurple-${svgId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#e9d5ff" />
+              <stop offset="40%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#6d28d9" />
+            </linearGradient>
+            <radialGradient id={`wingGlow-${svgId}`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="white" stopOpacity="0" />
+            </radialGradient>
+            <filter id={`wingFilter-${svgId}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur" />
+              <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="glow" />
+              <feComposite in="SourceGraphic" in2="glow" operator="over" />
+            </filter>
+            <filter id={`heatDistortion-${svgId}`}>
+              <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="5">
+                <animate attributeName="seed" from="1" to="100" dur="10s" repeatCount="indefinite" />
+              </feTurbulence>
+              <feDisplacementMap in="SourceGraphic" scale="4" />
+            </filter>
+            <radialGradient id={`wingHighlight-${svgId}`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.8" />
               <stop offset="100%" stopColor="white" stopOpacity="0" />
             </radialGradient>
           </defs>
 
-          {/* ── GROUND SHADOW ── */}
-          <ellipse className="kitsune-shadow" cx="110" cy="226" rx="58" ry="7"
+          {/* ── GROUND SHADOW (lower when mounted) ── */}
+          <ellipse className="kitsune-shadow" cx="110" cy={stage.mount ? 245 : 226} rx="58" ry="7"
             fill={stage.glowColor} opacity="0.22" />
+
+          {/* ── THÚ CƯỠI (MOUNT) ── */}
+          {stage.mount === 'book' && (
+            <g className="mount-anim" style={{ animation: 'kitsuneFloat 3s ease-in-out infinite' }}>
+              {/* Premium Scroll Mount */}
+              <rect x="20" y="225" width="180" height="25" rx="4" fill={`url(#scrollGrad-${svgId})`} />
+              <rect x="25" y="228" width="170" height="19" rx="2" fill="#fffbeb" />
+              {/* Scroll Handles */}
+              <rect x="15" y="222" width="10" height="31" rx="3" fill="#451a03" />
+              <rect x="195" y="222" width="10" height="31" rx="3" fill="#451a03" />
+              {/* Rune effects */}
+              <text x="50" y="241" fontSize="10" fill="#92400e" opacity="0.6" fontWeight="900">學</text>
+              <text x="170" y="241" fontSize="10" fill="#92400e" opacity="0.6" fontWeight="900">書</text>
+              {/* Float Effect Glow */}
+              <ellipse cx="110" cy="240" rx="60" ry="15" fill={`url(#mountGlow-${svgId})`} opacity="0.4" />
+            </g>
+          )}
+
+          {stage.mount === 'cloud_storm' && (
+            <g className="mount-anim" style={{ animation: 'kitsuneFloat 2s ease-in-out infinite alternate' }}>
+              {/* Premium Plasma Disc */}
+              <ellipse cx="110" cy="240" rx="90" ry="25" fill="#4c1d95" opacity="0.4" />
+              <ellipse cx="110" cy="240" rx="80" ry="20" stroke="#a855f7" strokeWidth="2" fill="none" strokeDasharray="20 10" />
+              <ellipse cx="110" cy="240" rx="60" ry="12" fill={`url(#plasmaGrad-${svgId})`} />
+              {/* Lightning Orbs */}
+              <circle cx="25" cy="240" r="6" fill="#fbbf24">
+                <animate attributeName="r" values="6;8;6" dur="1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="195" cy="240" r="6" fill="#fbbf24">
+                <animate attributeName="r" values="6;8;6" dur="1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="110" cy="240" r="30" fill={`url(#mountGlow-${svgId})`} opacity="0.6" />
+            </g>
+          )}
+
+          {stage.mount === 'leaf_divine' && (
+            <g className="mount-anim" style={{ animation: 'legendaryFloat 4s ease-in-out infinite' }}>
+              {/* Premium Celestial Lotus */}
+              <ellipse cx="110" cy="245" rx="100" ry="30" fill="url(#mountGlow-kit-0)" opacity="0.3" />
+              {/* Floating Petals */}
+              <path d="M 110,215 Q 150,225 110,270 Q 70,225 110,215" fill="#fbbf24" opacity="0.9" />
+              <path d="M 50,240 Q 80,220 110,240 Q 80,260 50,240" fill="#fde68a" transform="rotate(-20 110 240)" />
+              <path d="M 170,240 Q 140,220 110,240 Q 140,260 170,240" fill="#fde68a" transform="rotate(20 110 240)" />
+              {/* Rotating Rings */}
+              <ellipse cx="110" cy="242" rx="110" ry="35" stroke="#fbbf24" strokeWidth="1" fill="none" opacity="0.5">
+                <animateTransform attributeName="transform" type="rotate" from="0 110 242" to="360 110 242" dur="10s" repeatCount="indefinite" />
+              </ellipse>
+              <text x="110" y="247" fontSize="15" textAnchor="middle">✨</text>
+            </g>
+          )}
+
+          {/* ── ULTIMATE DENSE PHOENIX WINGS (Level 16+) ── */}
+          {stage.hasWings && (() => {
+            const isDivineWing = stage.tails >= 3;
+            const gradId = isDivineWing ? `wingGrad-${svgId}` : `wingGradPurple-${svgId}`;
+            const fireCol = isDivineWing ? '#ef4444' : '#6d28d9'; 
+            const goldCol = isDivineWing ? '#fcd34d' : '#a855f7'; 
+            
+            // Outer Long Feathers
+            const longFeathers = [
+              "M 60,150 C -40,110 -120,60 -140,-20 C -70,60 20,120 60,150 Z",
+              "M 58,155 C -50,140 -130,100 -150,40 C -70,110 0,140 58,155 Z",
+              "M 55,160 C -60,180 -140,140 -145,90 C -70,140 10,150 55,160 Z",
+              "M 52,166 C -50,230 -110,240 -115,200 C -50,220 10,195 52,166 Z",
+              "M 50,172 C -20,260 -70,300 -80,260 C -30,280 20,220 50,172 Z",
+              "M 65,145 C 50,80 65,30 40,-80 C 70,30 85,100 65,145 Z",
+              "M 75,135 C 90,60 120,40 145,-70 C 120,40 100,90 75,135 Z",
+              "M 85,125 C 110,70 145,50 175,-40 C 130,70 110,100 85,125 Z",
+            ];
+
+            // Inner Filler Feathers (to make it look thick)
+            const shortFeathers = [
+              "M 60,150 C 0,140 -40,110 -50,100 C -20,120 40,140 60,150 Z",
+              "M 60,155 C 0,165 -40,160 -50,140 C -20,155 40,160 60,155 Z",
+              "M 70,145 C 75,110 90,100 85,80 C 80,105 75,130 70,145 Z",
+              "M 55,155 C 30,150 10,140 -20,120 C 10,135 40,150 55,155 Z",
+            ];
+
+            return (
+              <g opacity="0.98" filter={`url(#heatDistortion-${svgId})`}>
+                {/* ── PARTICLES ── */}
+                {[...Array(25)].map((_, i) => (
+                  <circle key={`p-${i}`} r={0.8 + Math.random()} fill={goldCol}>
+                    <animate attributeName="cx" values={`${70+Math.random()*80};${10+Math.random()*200}`} dur={`${0.8+Math.random()*1.2}s`} repeatCount="indefinite" />
+                    <animate attributeName="cy" values="180;-30" dur={`${0.8+Math.random()*1.2}s`} repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0;1;0" dur={`${0.8+Math.random()*1.2}s`} repeatCount="indefinite" />
+                  </circle>
+                ))}
+
+                {/* ── LEFT PHOENIX WING ── */}
+                <g className="kitsune-wing-left" style={{ transformOrigin: '85px 150px' }}>
+                  {/* Thick Base Core */}
+                  <path d="M 60,150 Q -30,140 -100,60 Q -50,140 60,150 Z" fill={fireCol} opacity="0.4" filter="blur(8px)" />
+                  <ellipse cx="30" cy="140" rx="80" ry="50" fill={fireCol} opacity="0.15" filter="blur(30px)" />
+                  
+                  {/* Corona Aura */}
+                  {longFeathers.map((d, i) => (
+                    <path key={`lf-c-${i}`} d={d} fill={goldCol} opacity="0.2" stroke={goldCol} strokeWidth="15" filter="blur(10px)" />
+                  ))}
+                  
+                  {/* TRIPLE LAYERED RENDERING */}
+                  {/* 1. Base Density */}
+                  {longFeathers.map((d, i) => (
+                    <path key={`lf-b-${i}`} d={d} fill={fireCol} opacity="0.6" transform="translate(1,1)" filter="blur(2px)" />
+                  ))}
+                  {/* 2. Middle Volume */}
+                  {longFeathers.map((d, i) => (
+                    <g key={`lf-m-${i}`} filter={`url(#wingFilter-${svgId})`}>
+                      <path d={d} fill={`url(#${gradId})`} stroke={fireCol} strokeWidth="0.8" />
+                    </g>
+                  ))}
+                  {/* 3. Inner Fillers (The 'Density' Secret) */}
+                  {shortFeathers.map((d, i) => (
+                    <g key={`lf-s-${i}`} filter={`url(#wingFilter-${svgId})`}>
+                      <path d={d} fill={goldCol} opacity="0.8" />
+                      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
+                    </g>
+                  ))}
+                  {/* 4. Top Glow & Energy */}
+                  {longFeathers.map((d, i) => (
+                    <path key={`lf-e-${i}`} d={d} fill="none" stroke="white" strokeWidth="1.5" strokeDasharray="10,30" opacity="0.4">
+                      <animate attributeName="stroke-dashoffset" from="80" to="0" dur="0.5s" repeatCount="indefinite" />
+                    </path>
+                  ))}
+
+                  <circle cx="75" cy="148" r="35" fill={goldCol} opacity="0.5" filter="blur(15px)" />
+                  <circle cx="75" cy="148" r="15" fill="white" opacity="0.7" filter="blur(4px)" />
+                </g>
+
+                {/* ── RIGHT PHOENIX WING ── */}
+                <g className="kitsune-wing-right" style={{ transformOrigin: '135px 150px' }}>
+                  <path d="M 150,150 Q 240,140 310,60 Q 260,140 150,150 Z" fill={fireCol} opacity="0.4" filter="blur(8px)" />
+                  
+                  {longFeathers.map((d, i) => (
+                    <g key={`rf-f-${i}`} filter={`url(#wingFilter-${svgId})`}>
+                      <path d={d} fill={`url(#${gradId})`} stroke={fireCol} strokeWidth="0.8" transform="translate(220, 0) scale(-1, 1)" />
+                      {/* Energy Vein mirrored */}
+                      <path d={d} fill="none" stroke="white" strokeWidth="1.5" strokeDasharray="10,30" opacity="0.4" transform="translate(220, 0) scale(-1, 1)">
+                        <animate attributeName="stroke-dashoffset" from="0" to="80" dur="0.5s" repeatCount="indefinite" />
+                      </path>
+                    </g>
+                  ))}
+                  {/* Mirrored fillers */}
+                  {shortFeathers.map((d, i) => (
+                    <path key={`rf-s-${i}`} d={d} fill={goldCol} opacity="0.7" transform="translate(220, 0) scale(-1, 1)" filter="blur(1px)" />
+                  ))}
+                  <circle cx="145" cy="148" r="35" fill={goldCol} opacity="0.5" filter="blur(15px)" />
+                  <circle cx="145" cy="148" r="15" fill="white" opacity="0.7" filter="blur(4px)" />
+                </g>
+
+                {/* Core Flare Energy Surge */}
+                <circle cx="110" cy="155" r="45" fill={goldCol} opacity="0.25" filter="blur(20px)" />
+                <ellipse cx="110" cy="155" rx="80" ry="25" fill="white" opacity="0.15" filter="blur(15px)">
+                   <animate attributeName="rx" values="60;100;60" dur="1.5s" repeatCount="indefinite" />
+                </ellipse>
+              </g>
+            );
+          })()}
 
           {/* ── CUTE TAIL ── */}
           <g className="kitsune-tail" style={{ transformBox:'fill-box', transformOrigin:'168px 170px' }}>
@@ -1343,46 +1576,33 @@ const KitsuneMascot = ({ level = 12 }) => {
           <ellipse className="kitsune-cheek" cx="78"  cy="114" rx="15" ry="11" fill="#fda4af" opacity="0.6" />
           <ellipse className="kitsune-cheek" cx="142" cy="114" rx="15" ry="11" fill="#fda4af" opacity="0.6" />
 
-          {/* ── BIG ANIME EYES (the KEY to cuteness!) ── */}
-          {[{ cx: 92, side: 'left' }, { cx: 128, side: 'right' }].map(({ cx: ex, side }) => (
+          {/* ── CHIBI EYES ── */}
+          {[{ cx: 94, side: 'left' }, { cx: 126, side: 'right' }].map(({ cx: ex, side }) => (
             <g key={`eye-${side}`} className="kitsune-eye"
-              style={{ transformBox:'fill-box', transformOrigin:`${ex}px 104px` }}>
-              {/* Outer white — big oval */}
-              <ellipse cx={ex} cy="106" rx="14" ry="15" fill="white" />
+              style={{ transformOrigin: `${ex}px 100px` }}>
+              {/* Outer white */}
+              <ellipse cx={ex} cy="100" rx="11" ry="12" fill="white" />
               {/* Colour iris */}
-              <ellipse cx={ex} cy="108" rx="11" ry="12" fill={eyeFill} />
-              {eyeGlow && <ellipse cx={ex} cy="108" rx="11" ry="12" fill={eyeGlow} opacity="0.25" />}
-              {/* Pupil — large for cuteness */}
-              <ellipse cx={ex} cy="109" rx="7.5" ry="8.5" fill="#0c1220" />
-              {eyeGlow && <ellipse cx={ex} cy="109" rx="5" ry="6" fill={eyeGlow} opacity="0.4" />}
-              {/* Shine 1 — large top-left */}
-              <circle cx={ex - 3} cy="100" r="4.5" fill="white" opacity="0.95" />
-              {/* Shine 2 — small bottom-right */}
-              <circle cx={ex + 5} cy="112" r="2"   fill="white" opacity="0.75" />
-              {/* Shine 3 — tiny top-right */}
-              <circle cx={ex + 6} cy="100" r="1.5" fill="white" opacity="0.6"  />
-              {/* Soft eyelid top shadow — gentle (not droopy, more awake/cute) */}
-              <path d={`M ${ex-14} 101 Q ${ex} 94 ${ex+14} 101`}
-                stroke={furDark} strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.3" />
-              {/* Bottom lash curve */}
-              <path d={`M ${ex-12} 118 Q ${ex} 122 ${ex+12} 118`}
-                stroke={furDark} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.3" />
+              <ellipse cx={ex} cy="102" rx="8" ry="9" fill={eyeFill} />
+              {eyeGlow && <ellipse cx={ex} cy="102" rx="8" ry="9" fill={eyeGlow} opacity="0.25" />}
+              {/* Pupil */}
+              <ellipse cx={ex} cy="103" rx="5.5" ry="6.5" fill="#0c1220" />
+              {/* Shine */}
+              <circle cx={ex - 3} cy="96" r="3.5" fill="white" opacity="0.95" />
+              <circle cx={ex + 4} cy="104" r="1.5" fill="white" opacity="0.75" />
             </g>
           ))}
 
-          {/* ── NOSE — cute small button nose ── */}
-          <ellipse cx="110" cy="118" rx="6.5" ry="4.5" fill="#1e293b" />
-          <ellipse cx="108" cy="116.5" rx="2.5" ry="1.5" fill="white" opacity="0.35" />
+          {/* ── NOSE ── */}
+          <ellipse cx="110" cy="116" rx="6.5" ry="4.5" fill="#1e293b" />
+          <ellipse cx="108" cy="114.5" rx="2.5" ry="1.5" fill="white" opacity="0.35" />
 
           {/* ── HAPPY MOUTH ── */}
-          <path d="M 100 125 Q 110 135 120 125"
+          <path d="M 100 124 Q 110 134 120 124"
             stroke={furDark} strokeWidth="2.2" fill="none" strokeLinecap="round" />
-          {/* Tongue (baby / common stages) */}
+          {/* Tongue */}
           {!isMysterious && !isDivine && (
-            <>
-              <ellipse cx="110" cy="133" rx="6.5" ry="5" fill="#fb7185" />
-              <ellipse cx="110" cy="131" rx="6.5" ry="2" fill="#fda4af" opacity="0.6" />
-            </>
+            <path d="M 106 128 Q 110 134 114 128" fill="#fb7185" />
           )}
 
           {/* ── FOREHEAD RUNE (high stages) ── */}
@@ -1692,11 +1912,11 @@ export default function AchievementsPage() {
 
         {/* ── HERO HEADER ── */}
         <div style={{
-          background: 'rgba(5,12,36,0.75)',
-          backdropFilter: 'blur(28px)',
-          WebkitBackdropFilter: 'blur(28px)',
-          borderBottom: '1px solid rgba(139,92,246,0.25)',
-          boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
+          background: 'rgba(5,12,36,0.12)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          borderBottom: '1px solid rgba(139,92,246,0.18)',
+          boxShadow: '0 1px 20px rgba(0,0,0,0.15)',
         }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, alignItems: 'center' }}>
@@ -1774,15 +1994,32 @@ export default function AchievementsPage() {
               </div>
 
               {/* Info + XP */}
-              <div style={{ flex: 1, minWidth: 280 }}>
-                <h1 style={{ fontSize: 28, fontWeight: 900, color: 'white', marginBottom: 4 }}>Minh Hoang</h1>
-                <p style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginBottom: 16 }}>Học viên tích cực • Tham gia từ 2023</p>
+              <div style={{ flex: 1, minWidth: 280, position: 'relative' }}>
+                {/* ✨ Micro-stars inside the info panel */}
+                {[...Array(18)].map((_, i) => (
+                  <div key={`hs-${i}`} style={{
+                    position: 'absolute',
+                    left: `${5 + Math.random() * 90}%`,
+                    top: `${5 + Math.random() * 90}%`,
+                    width: `${Math.random() * 2 + 1}px`,
+                    height: `${Math.random() * 2 + 1}px`,
+                    borderRadius: '50%',
+                    background: i % 5 === 0 ? '#a5f3fc' : i % 3 === 0 ? '#fde68a' : 'white',
+                    opacity: 0.5,
+                    animation: `twinkle ${(2 + Math.random() * 4).toFixed(1)}s ease-in-out ${(Math.random() * -5).toFixed(1)}s infinite`,
+                    pointerEvents: 'none',
+                  }} />
+                ))}
+
+                <h1 style={{ fontSize: 28, fontWeight: 900, color: 'white', marginBottom: 4, position: 'relative', zIndex: 1 }}>Minh Hoang</h1>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginBottom: 16, position: 'relative', zIndex: 1 }}>Học viên tích cực • Tham gia từ 2023</p>
 
                 {/* XP Bar */}
                 <div style={{
-                  background: 'rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.05)',
                   borderRadius: 16, padding: '14px 18px',
                   border: '1px solid rgba(255,255,255,0.1)',
+                  position: 'relative', zIndex: 1,
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
                     <span style={{ color: '#34d399' }}>Level {userStats.level}</span>

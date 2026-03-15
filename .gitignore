@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (KHÔNG commit lên git)
+.env
+.env.production
+.env.development
+.env.local
+# Chỉ commit .env.example nếu muốn hướng dẫn team
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
