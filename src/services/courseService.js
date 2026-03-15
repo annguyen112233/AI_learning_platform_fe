@@ -10,8 +10,11 @@ export const getCourseStats = () => {
   return api.get('/courses/stats');
 }
 
-export const getCoursesForStudent = () => {
-  return api.get('/courses/all-course/students');
+export const getCoursesForStudent = (page = 1, size = 10, search = '', status = '') => {
+  const params = { page, size };
+  if (search) params.search = search;
+  if (status) params.status = status;
+  return api.get('/courses/all-course/students', { params });
 }
 
 export const getCourseById = (courseId) => {
@@ -68,4 +71,8 @@ export const requestUnlock = (courseId, reason = '') => {
 
 export const reviewDeletionRequest = (courseId, action, reason = '') => {
   return api.put(`/courses/${courseId}/review-deletion`, { action, reason });
+};
+
+export const getCertificate = (courseId) => {
+  return api.get(`/certificates/course/${courseId}`);
 };
