@@ -1,6 +1,6 @@
 import api from "./api";
 
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = "http://43.207.112.141/api";
 
 // ── Upload dùng fetch (không dùng axios) ─────────────────────────────────────
 // Lý do: axios instance có default Content-Type: application/json
