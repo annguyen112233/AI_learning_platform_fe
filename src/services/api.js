@@ -3,7 +3,7 @@ import axios from 'axios';
 import refreshApi from './refreshApi';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: 'http://43.207.112.141:8080/api',
   headers: {
     'Content-Type': 'application/json',
   },

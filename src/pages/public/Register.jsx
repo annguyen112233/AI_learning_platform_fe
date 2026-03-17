@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from "react-router-dom";
 import {
   Mail, Lock, User, Key, ArrowLeft, Loader2,
   BookOpen, Sparkles, GraduationCap, Presentation
@@ -246,10 +247,10 @@ export default function Register() {
                         <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 ${strength >= 4
-                                ? "bg-emerald-500"
-                                : strength >= 2
-                                  ? "bg-yellow-400"
-                                  : "bg-red-400"
+                              ? "bg-emerald-500"
+                              : strength >= 2
+                                ? "bg-yellow-400"
+                                : "bg-red-400"
                               }`}
                             style={{ width: `${(strength / 5) * 100}%` }}
                           />
@@ -257,10 +258,10 @@ export default function Register() {
 
                         <p
                           className={`mt-1 text-sm font-semibold ${strength >= 4
-                              ? "text-emerald-600"
-                              : strength >= 2
-                                ? "text-yellow-500"
-                                : "text-red-500"
+                            ? "text-emerald-600"
+                            : strength >= 2
+                              ? "text-yellow-500"
+                              : "text-red-500"
                             }`}
                         >
                           {strength >= 4
@@ -322,9 +323,9 @@ export default function Register() {
           <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
             <p className="text-slate-500 text-sm font-medium">
               Bạn đã có tài khoản?{' '}
-              <a href="/login" className="text-green-600 font-bold hover:underline">
+              <Link to="/login" className="text-green-600 font-bold hover:underline">
                 Đăng nhập
-              </a>
+              </Link>
             </p>
           </div>
         </div>
