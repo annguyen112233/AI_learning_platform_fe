@@ -1,6 +1,6 @@
 import api from "./api";
 
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // ── Upload dùng fetch (không dùng axios) ─────────────────────────────────────
 // Lý do: axios instance có default Content-Type: application/json
